@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="main.js" defer></script>
+        <link rel="stylesheet" href="style.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Kavoon&display=swap" rel="stylesheet">
+        <title>Cookie Clicker Easter Egg</title>
+    </head>
+    <body>
+        
+        <div id="container">
+            
+                <div class="cookie">
+                    <h1 id="gameTitle">Cookie Clicker</h1>
+                    
+                    <div id="score">
+                        <p id="cookies">Cookies:<span id="cookieCount">0.0</span></p>
+                    </div>
+                    
+                    <button id="bigCookie" onclick="cookieAdd()"></button>
+                    <div id="milk"></div>
+                </div>
+                <div id="upgrades">
+                    <div id="upgradeTitle">Upgrades</div>
+                    <div id="upgradeTypes">
+                        <button class="upgrade" onclick="clickerAdd(this)">Auto Clicker : <span id="aClickerP">10</span> || Own : <span id="aClickerA">0</span></button>
+                        <button class="upgrade" onclick="nannyAdd(this)">Nanny : <span id="nannyP">50</span> || Own :<span id="nannyA">0</span></button>
+                        <button class="upgrade" onclick="factoryAdd(this)">Factory : <span id="factoryP">1000</span> || Own : <span id="factoryA">0</span></button>
+                        <button class="upgrade" onclick="templeAdd(this)">Temple : <span id="templeP">20000</span> || Own : <span id="templeA">0</span></button>
+                        <button class="upgrade" onclick="wizardAdd(this)">Wizard : <span id="wizardP">100000</span> || Own : <span id="wizardA">0</span></button>
+                        <button class="upgrade" onclick="spaceAdd(this)">Space : <span id="spaceP">2500000</span> || Own : <span id="spaceA">0</span></button>
+                        <button class="upgrade" onclick="timeMachineAdd(this)">Time Machine : <span id="timeMachineP">10000000</span> || Own : <span id="timeMachineA">0</span></button>
+                        <button class="upgrade" onclick="clonesAdd(this)">Clones : <span id="clonesP">50000000000</span> || Own : <span id="clonesA">0</span></button>
+                    </div>
+                    
+                </div>
+            </div>
+        <div id="sidebar">
+            <button id="button1" onclick="showCredits()">Credits</button>
+            <button id="button2" onclick="openLink()">Return</button>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="main.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Spray 'n Pray</title>
+</head>
+<body>
+    <div id="titleScreen">
+        <h1>Spray 'n Pray</h1>
+        <div id="titleButtons">
+            <button id="collectionBtn" onclick="openCollection()">Collection</button>
+            <button id="nonGameBtn" onclick="startGame()"> Start</button>
+            <button id="nonGameBtn" onclick="settingsMenu()">Settings</button>
+        </div>
+    </div>
+
+    <div id="settingsScreen">
+        <div id="settingsBar">
+            <button class="settingsTab active" data-tab="audioTab">Audio</button>
+            <button class="settingsTab" data-tab="controlsTab">Controls</button>
+            <button class="settingsTab" data-tab="creditsTab">Credits</button>
+        </div>
+
+        <div id="settingsContent">
+            <!-- Audio Tab -->
+            <div class="settingsTabContent" id="audioTab">
+                <h2>Audio Settings</h2>
+                <label for="volumeSlider">Volume:</label>
+                <input type="range" id="volumeSlider" min="0" max="100" step="1" value="100">
+            </div>
+
+            <!-- Controls Tab -->
+            <div class="settingsTabContent" id="controlsTab" style="display:none;">
+                <h2>Controls</h2>
+                <div class="controlsContainer">
+                    <!-- Movement WSAD -->
+                    <div class="controlsSection" id="movementControls">
+                        <h3>Movement</h3>
+                        <div class="keyRow">
+                            <button class="keyBtn">W</button>
+                        </div>
+                        <div class="keyRow">
+                            <button class="keyBtn">A</button>
+                            <button class="keyBtn">S</button>
+                            <button class="keyBtn">D</button>
+                        </div>
+                    </div>
+
+                    <!-- Shooting Arrow Keys -->
+                    <div class="controlsSection" id="shootControls">
+                        <h3>Shoot</h3>
+                        <div class="keyRow">
+                            <button class="keyBtn">↑</button>
+                        </div>
+                        <div class="keyRow">
+                            <button class="keyBtn">←</button>
+                            <button class="keyBtn">↓</button>
+                            <button class="keyBtn">→</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Credits Tab -->
+            <div class="settingsTabContent" id="creditsTab" style="display:none;">
+                <h2>Credits</h2>
+                <p>Game Design & Programming: Shahriar Kabir Rafi</p>
+                <p>Art & Textures: Online</p>
+                <p>Music: Expedition 33 - "Monoco"</p>
+                <button id="creditsStarBtn" onclick="relocate()"></button>
+            </div>
+
+            <button id="returnBtn" onclick="returnToTitle()">Return</button>
+        </div>
+    </div>
+    <div id="collectionScreen" class="collection-screen">
+        <!-- Tabs -->
+        <div id="collectionTabs" class="collection-tabs">
+            <button class="collectionTab active" data-tab="itemsTab">Items</button>
+            <button class="collectionTab" data-tab="challengesTab">Challenges</button>
+            <button class="collectionTab" data-tab="unlocksTab">Unlocks</button>
+        </div>
+
+        <!-- Tab content -->
+        <div id="collectionContent" class="collection-content">
+            <div class="collectionTabContent" id="itemsTab"></div>
+            <div class="collectionTabContent" id="challengesTab"></div>
+            <div class="collectionTabContent" id="unlocksTab"></div>
+        </div>
+
+        <!-- Challenge Detail Panel -->
+        <div id="challengeDetailContainer" style="width: 100%; height: 250px; margin: 10px 0;"></div>
+
+        <button id="collectionReturnBtn" onclick="closeCollection()">Return</button>
+    </div>
+
+
+    <div id="gameArea">
+        <p id="score">Score: <span id="timeScore">0</span></p>
+    </div>
+    <div id="nukeFace"></div>
+</body>
+</html>

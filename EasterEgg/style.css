@@ -1,0 +1,247 @@
+*{
+    box-sizing: border-box;
+}
+
+
+.kavoon-regular {
+    font-family: "Kavoon", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+html, body {
+    background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
+    margin: 0;
+    padding: 0;
+    cursor: default;
+    font-family: "Kavoon", serif;
+    overflow: hidden;
+}
+
+#sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 75px;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    border-left: 2px solid #333;
+}
+
+#sidebar button {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid white;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.3s;
+}
+
+#sidebar button:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+#cookies{
+    position: absolute;
+    z-index: 2;
+    font-size: 60px;
+    color: white;
+    transform: translate(-45%,-300%);
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+#container{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+}
+
+.cookie {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#upgrades{
+    border: 3px solid #333;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    height: 99%;
+    width: 50%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+#bigCookie{
+    width: 200px;
+    height: 200px;
+    background-image: url(texture/Cookie.png);
+    background-size: 120%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    animation: rotateCookie 30s linear infinite;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease;
+}
+
+#bigCookie:hover {
+    transform: scale(1.1);
+}
+
+@keyframes rotateCookie {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+} 
+
+#score {
+    justify-content: space-around;
+}
+
+#upgradeTitle{
+    font-size: 50px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border-bottom: 8px solid black;
+}
+#upgradeTypes{
+    display: block;
+    border: none;
+    height: 70px;
+    padding: 20px;
+    overflow-y: none;
+}
+
+.upgrade{
+    font-family: "Kavoon", serif;
+    width: 100%;
+    height: 40px;
+    padding: 35px;
+    text-align: center;
+    border: 2px solid white;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.upgrade:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.02);
+    font-size: 20px;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+.insufficient {
+    animation: shake 0.5s ease-in-out;
+    background: rgba(255, 0, 0, 0.7) !important;
+    color: white !important;
+}
+
+#milk {
+    position: absolute;
+    bottom: -450px;
+    left: 50%;
+    transform: translateX(50%);
+    width: 200vw;
+    height: 400px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 245, 220, 0.9));
+    border-radius: 50% 50% 0 0;
+    animation: milkWave 4s ease-in-out infinite;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes milkWave {
+    0%, 100% {
+        transform: translateX(-50%) scaleY(1) rotate(0deg);
+        border-radius: 0% 0% 0 0;
+    }
+    25% {
+        transform: translateX(-50%) scaleY(1.1) rotate(1deg);
+        border-radius: 0% 0% 0 0;
+    }
+    50% {
+        transform: translateX(-50%) scaleY(0.9) rotate(-1deg);
+        border-radius: 0% 0% 0 0;
+    }
+    75% {
+        transform: translateX(-50%) scaleY(1.05) rotate(0.5deg);
+        border-radius: 0% 0% 0 0;
+    }
+}
+
+#creditsContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
+    color: white;
+    font-family: "Kavoon", serif;
+    text-align: center;
+    
+}
+
+#creditsContainer h1 {
+    font-size: 60px;
+    margin-bottom: 30px;
+}
+
+#creditsContainer p {
+    font-size: 30px;
+    margin: 10px 0;
+}
+
+#creditsContainer button {
+    margin-top: 40px;
+    padding: 15px 30px;
+    font-size: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: 2px solid white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#creditsContainer button:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#gameTitle {
+    position: absolute;
+    top: -330px;
+    left: -30px;
+    font-family: 'Bebas Neue', cursive;
+    color: #fff;
+    width: 300px;
+    font-size: 60px;
+    text-align: center;
+    margin-bottom: 0px;
+    z-index: 9999;
+}
