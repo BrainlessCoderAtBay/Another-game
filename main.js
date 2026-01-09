@@ -1217,9 +1217,7 @@ function closeCollection() {
 }
 
 function notifyCollectionChange() {
-    if (collectionOpen) {
-        updateCollectionUI();
-    }
+    updateCollectionUI();   
 }
 
 
@@ -1498,12 +1496,6 @@ function cleanupGameArea(){
     document.getElementById("itemChoiceContainer")?.remove();
 }
 
-function openCollection() {
-    //Show The first thing when you start the load *Items*
-    titleScreen.style.display = "none";
-    collectionScreen.style.display = "block";
-    updateCollectionUI();
-}
 
 function closeCollection() {
     collectionScreen.style.display = "none";
