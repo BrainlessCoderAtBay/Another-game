@@ -93,7 +93,7 @@ const itemTypesDescription = {
     piercingShots: `Bullets pierce through enemies.
                             <br>Clean Shots!
                         <br>Knockback left the chat`,
-    shotSpeed: `Increase shoot speed
+    shotSpeed: `Increase shot speed
     <br>Its a pistol to you but a machine gun to me!`   
 };
 
@@ -102,6 +102,7 @@ let inventory = {
     damage: 0, size: 0,
     range: 0, regen: 0,
     sRegen: 0, turret: 0,
+    shotSpeed: 0,
     nuke: false,
     homingShot: false,
     piercingShots: false
@@ -452,7 +453,7 @@ function spawnEnemy(){
     
     enemy.health = enemyStat.health; enemy.damage = enemyStat.damage;
     
-    let dist;
+    let dist, attempts;
     
     do{ 
         enemy.x = Math.random() * (gameArea.clientWidth - enemyStat.width);
@@ -461,8 +462,11 @@ function spawnEnemy(){
         const dx = (player.x + playerStats.width / 2) - (enemy.x + enemyStat.width / 2);
         const dy = (player.y + playerStats.height / 2) - (enemy.y + enemyStat.height / 2);
         dist = Math.sqrt(dx * dx + dy * dy);
-    }while(dist <= 500);//check the distance between enemy position to player position
-    
+
+        attempts++
+    }while(dist <= 500 && attempts < 20);//check the distance between enemy position to player position
+    //Attempts to make sure enemies spawning logic doesnt hard lock when screen is too small
+
     const elapsedTime = Math.floor((Date.now() - startTime) / 60000); //60000 = 1 minute
     
     //Cap the enemy speed because I am not a bad person
@@ -537,8 +541,8 @@ function updateEnemies(){
             // Bullet hit enemy
             //Add piercing shot logic
             if (hit){
-                const dx = emy.x - player.x;
-                const dy = emy.y - player.y;
+                const dx = emy.x - blt.x;
+                const dy = emy.y - blt.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const distTravelled = Math.sqrt(
                     (blt.x - blt.startX) * (blt.x - blt.startX) +
@@ -947,13 +951,18 @@ function applyItemEffect(type){
             playerStats.damage = Math.round(playerStats.damage * 0.2 * 100) / 100; //Decrease damage by 5 for balancing
             break;
         case itemTypes.shotSpeed:
-            shotCoolDown -= 20;
+            inventory.shotSpeed++;
+            shotCoolDown = Math.max(10, shotCoolDown - 20);
             break;
     }
 }
 
 function homingMissile(blt){
     let closestEnemy, closestDist = Infinity;
+
+    if (inventory.piercingShots === true) {
+        unlockChallenge("Psychic");
+    }
     
     enemies.forEach(emy => {
         const dx = (emy.x + enemyStat.width / 2) - (blt.x + playerStats.bulletSize / 2);
@@ -1497,11 +1506,6 @@ function cleanupGameArea(){
 }
 
 
-function closeCollection() {
-    collectionScreen.style.display = "none";
-    titleScreen.style.display = "flex";
-}
-
 document.querySelectorAll(".collectionTab").forEach(tab => {
     tab.addEventListener("click", () => {
         document.querySelectorAll(".collectionTab").forEach(t => t.classList.remove("active"));
@@ -1555,5 +1559,5 @@ window.addEventListener("resize", () => {
 //====================
 
 function relocate(){
-    window.location.href = "EasterEgg/index.html"
+    window.open("EasterEgg/index.html", "Shhh");
 }
