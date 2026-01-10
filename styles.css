@@ -484,3 +484,30 @@ button{
     opacity: 0.4;
     pointer-events: none;
 }
+
+.enemy.hit {
+    box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.8);
+    background-color: red;
+    transition: background-color 0.1s, box-shadow 0.1s;
+}
+
+.damage-number {
+    position: absolute;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    pointer-events: none;
+    animation: floatUp 0.6s ease-out forwards;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+

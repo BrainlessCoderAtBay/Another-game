@@ -1,3 +1,20 @@
+/*
+ICS3U / ICS3C Course Culminating Task
+
+Game: HOUR ZERO
+Author: Shahriar Kabir Rafi
+
+Description:
+A top-down survival shooter where the player fights endless enemies,
+collects items, unlocks abilities, and survives as long as possible.
+
+Controls:
+WASD - Move
+Arrow Keys - Shoot
+ESC - Pause
+1 / 2 / 3 - Item Choice 
+*/
+
 //====================
 //     GAME SETUP
 //====================
@@ -34,8 +51,8 @@ const playerStats = {
 };
 
 const playerStatCaps = {
-    speed: 10, //Need to make sure its still fun
-    bulletSize: 25 //Max bullet size
+    speed: 25, //Need to make sure its still fun
+    bulletSize: 100 //Max bullet size
 }  
 
 const enemyStat = {
@@ -453,7 +470,7 @@ function spawnEnemy(){
     
     enemy.health = enemyStat.health; enemy.damage = enemyStat.damage;
     
-    let dist, attempts;
+    let dist;
     
     do{ 
         enemy.x = Math.random() * (gameArea.clientWidth - enemyStat.width);
@@ -463,9 +480,7 @@ function spawnEnemy(){
         const dy = (player.y + playerStats.height / 2) - (enemy.y + enemyStat.height / 2);
         dist = Math.sqrt(dx * dx + dy * dy);
 
-        attempts++
-    }while(dist <= 500 && attempts < 20);//check the distance between enemy position to player position
-    //Attempts to make sure enemies spawning logic doesnt hard lock when screen is too small
+    }while(dist <= 500);//check the distance between enemy position to player position
 
     const elapsedTime = Math.floor((Date.now() - startTime) / 60000); //60000 = 1 minute
     
@@ -473,6 +488,7 @@ function spawnEnemy(){
     const maxEnemySpeed = 9;
     enemy.health = Math.max(enemyStat.health, enemyStat.health * elapsedTime * 0.5);
     enemy.speed = Math.min(enemyStat.speed + elapsedTime * 0.5, maxEnemySpeed);
+    enemy.damage = Math.max(enemyStat.damage, enemyStat.damage + elapsedTime * 0.5)
     
     enemy.style.transform = `translate(${enemy.x}px,${enemy.y}px)`;
     gameArea.appendChild(enemy);
@@ -541,6 +557,9 @@ function updateEnemies(){
             // Bullet hit enemy
             //Add piercing shot logic
             if (hit){
+                emy.classList.add("hit");
+                showDamage(emy.x + 10, emy.y, blt.damage);
+                
                 const dx = emy.x - blt.x;
                 const dy = emy.y - blt.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -591,6 +610,9 @@ function updateEnemies(){
                     emyDeath = true;
                     break;
                 }
+                setTimeout(() => {
+                    emy.classList.remove('hit');
+                }, 100)
             }
         }
         
@@ -606,6 +628,9 @@ function updateEnemies(){
                 blt.y < emy.y + enemyStat.height;
             
             if (hit){
+                emy.classList.add("hit");
+                showDamage(emy.x + 10, emy.y, blt.damage)
+
                 emy.health -= blt.damage;
                 
                 if (blt.parentNode === gameArea) gameArea.removeChild(blt);
@@ -618,6 +643,9 @@ function updateEnemies(){
                     emyDeath = true;
                     break;
                 }
+                setTimeout(() => {
+                    emy.classList.remove("hit");
+                }, 100)
             }
         }
         if (emyDeath) continue;
@@ -656,6 +684,27 @@ function createTurret(){
     gameArea.appendChild(turret);
     turrets.push(turret);
 }
+
+//====================
+//    SHOW DAMAGE
+//====================
+
+function showDamage(x, y, amount){
+    const dmg = document.createElement("div");
+    dmg.className = "damage-number";
+    dmg.textContent = `-${amount}`;
+    dmg.style.left = `${x + Math.random() * 10 - 5}px` //Randomize the postion 
+    dmg.style.top = `${y}px`;
+
+    if (amount >= 50){
+        dmg.style.color = "orange";
+        dmg.style.fontSize = "24px";
+    }
+
+    gameArea.appendChild(dmg);
+    setTimeout(() => dmg.remove(), 600);
+}
+
 
 //====================
 //     GAME OVER   
@@ -995,7 +1044,7 @@ function homingMissile(blt){
 function triggerNuke(){
     if (!inventory.nuke) return;
     inventory.nuke = false;
-
+    gameArea.classList.add("shake");
     unlockChallenge("Use Nuke");
     unlockFeature("FirstNuke");
 
@@ -1014,6 +1063,10 @@ function triggerNuke(){
         nukeFace.style.opacity = "0";
     }, 150); // flash duration (ms)
 
+    setTimeout(() => {
+        gameArea.classList.remove("shake");
+    }, 200); // shake after flash (ms)
+    
     // Kill all enemies
     enemies.forEach(e => e.remove());
     enemies = [];
