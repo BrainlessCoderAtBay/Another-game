@@ -126,7 +126,7 @@ let inventory = {
 };  
 
 let unlocks = {
-    "FirstNuke": false
+    "Survivor ": false
 }
 
 let challenges = {
@@ -1046,7 +1046,6 @@ function triggerNuke(){
     inventory.nuke = false;
     gameArea.classList.add("shake");
     unlockChallenge("Use Nuke");
-    unlockFeature("FirstNuke");
 
     // STEP 1 — WHITE FLASH
     nukeFace.style.transition = "none";
@@ -1131,7 +1130,7 @@ let itemsInfo = {
 };
 
 let unlocksInfo = {
-    FirstNuke: { condition: "Unlock your first nuke", description: "Collect this to get access to nukes in your inventory." }
+    Survivor: { condition: "Survive 1000 seconds", description: "Man I wish I could figure out what to unlock." }
 };
 
 function collectItem(itemName) {
@@ -1336,6 +1335,8 @@ function stopAllMusic() {
 function gameLoop(){
     if (gameOver || !gameRunning) return;
     
+    let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+
     if (!paused){
         if (keysPressed["w"]) {
             player.y -= playerStats.speed;
@@ -1406,7 +1407,12 @@ function gameLoop(){
         updateEnemies();
         checkItemPickUp();
         updateHealthBar();
-        timeScore.textContent = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+        timeScore.textContent = score;
+
+        if (score >= 1000 && !features.Survivor.unlocked) {
+            unlockFeature("Survivor");
+        }
+
     }
     
     gameLoopId = requestAnimationFrame(gameLoop); //To make it look nice
