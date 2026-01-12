@@ -13,6 +13,17 @@ WASD - Move
 Arrow Keys - Shoot
 ESC - Pause
 1 / 2 / 3 - Item Choice 
+
+Features:
+- Dynamic enemy spawning that scales with time survived
+- Item collection and inventory system
+- Health and shield mechanics
+- Pause functionality
+- Challenge & unlock system with local Storage persistence
+- Visual feedback for damage and game events
+- Responsive UI elements
+- Music and Control in settings organized in separate tabs
+- 45 day torture in the making of this game
 */
 
 //====================
@@ -126,13 +137,13 @@ let inventory = {
 };  
 
 let unlocks = {
-    "Survivor ": false
+    "Survivor": false
 }
 
 let challenges = {
-    "First Kill": false,
+    "First_Kill": false,
     "Psychic": false,
-    "Use Nuke": false
+    "Use_Nuke": false
 };
 
 
@@ -155,7 +166,7 @@ function ensureInventoryUI(){
         inv.textContent = 
         `Speed: ${playerStats.speed} | ` +
         `Knockback: ${playerStats.knockBack} | ` +
-        `B-Size: ${playerStats.bulletSize} | ` +
+        `B-Size: ${Math.round(playerStats.bulletSize)} | ` +
         `Range: ${playerStats.bulletRange} | `+
         `Damage: ${playerStats.damage} | `+
         `Regen: ${playerRegen} | `+
@@ -180,7 +191,6 @@ function updateInventoryUI(){
         `S-Regen: ${playerSRegen} |`+
         `Shoot Speed: ${Math.round(1000 / shotCoolDown)}`;
         
-        console.log(1000 / shotCoolDown)
         //Caret invisible
         inv.style.userSelect = "none";
         inv.style.outline = "none";
@@ -591,7 +601,7 @@ function updateEnemies(){
                 if (emy.health <= 0){
                     
                     //Unlock first kill
-                    unlockChallenge("First Kill");
+                    unlockChallenge("First_Kill");
                     
                     //Regeneration func
                     if (inventory.regen && playerStats.health < 100){
@@ -1045,7 +1055,7 @@ function triggerNuke(){
     if (!inventory.nuke) return;
     inventory.nuke = false;
     gameArea.classList.add("shake");
-    unlockChallenge("Use Nuke");
+    unlockChallenge("Use_Nuke");
 
     // STEP 1 — WHITE FLASH
     nukeFace.style.transition = "none";
@@ -1100,7 +1110,7 @@ let collectedItems = {
 
 // Info objects
 let challengesInfo = {
-    "First Kill": {
+    "First_Kill": {
         condition: "Kill your first enemy",
         description: "Defeat an enemy to complete this challenge."
     },
@@ -1108,7 +1118,7 @@ let challengesInfo = {
         condition: "Obtain homing and piercing",
         description: "Aiming is overrated."
     },
-    "Use Nuke": {
+    "Use_Nuke": {
         condition: "Detonate the nuke",
         description: "Destroy all enemies at once using the nuke item."
     }
@@ -1116,7 +1126,7 @@ let challengesInfo = {
 
 let itemsInfo = {
     speed: { condition: "Increase speed", description: "Make your player faster." },
-    knockBack: { condition: "Increase knockback", description: "Bullets push enemies back further." },
+    knockBack: { condition: "Increase knock back", description: "Bullets push enemies back further." },
     damage: { condition: "Increase damage", description: "Deal more damage with your attacks." },
     size: { condition: "Increase bullet size", description: "Bigger bullets hit harder!" },
     range: { condition: "Increase bullet range", description: "Shoot farther." },
@@ -1136,24 +1146,53 @@ let unlocksInfo = {
 function collectItem(itemName) {
     if (collectedItems.hasOwnProperty(itemName)) {
         collectedItems[itemName] = true;
+        localStorage.setItem('collectedItems', JSON.stringify(collectedItems)); // Save to localStorage
     }
     notifyCollectionChange(); // <-- make sure UI updates ASAP
 }
 
 function unlockChallenge(challengeName) {
     challenges[challengeName] = true;
+    localStorage.setItem('challenges', JSON.stringify(challenges)); // Save to localStorage
     notifyCollectionChange(); // <-- update UI
 }
 
 function unlockFeature(unlockName) {
     unlocks[unlockName] = true;
+    localStorage.setItem('unlocks', JSON.stringify(unlocks)); // Save to localStorage
     notifyCollectionChange(); // <-- update UI
+}
+
+//Format item names
+function formatKey(key) {
+    switch (key) {
+        case "sRegen":
+            return "Shield Regeneration";
+        case "nuke":
+            return "Nuke";
+        case "piercingShots":
+            return "Piercing Shots";
+        case "homingShot":
+            return "Homing Shots";
+        case "shotSpeed":
+            return "Shot Speed";
+        case "knockBack":
+            return "Knock Back";
+        case "First_Kill":
+            return "First Kill";
+        case "Use_Nuke":
+            return "Use Nuke";
+        default:
+            return key.charAt(0).toUpperCase() + key.slice(1);
+
+    }
 }
 
 
 // Generic to show details
 function showDetail(key, type) {
     if (!challengeDetailContainer) return;
+
     challengeDetailContainer.innerHTML = "";
 
     let info;
@@ -1165,7 +1204,7 @@ function showDetail(key, type) {
     left.className = "leftSide";
 
     const title = document.createElement("h2");
-    title.textContent = key;
+    title.textContent = formatKey(key);
 
     const subtitle = document.createElement("h4");
     subtitle.textContent = info?.condition || "Condition";
@@ -1182,8 +1221,21 @@ function showDetail(key, type) {
 
     const circleBtn = document.createElement("button");
     circleBtn.className = "circleButton";
-    circleBtn.style.width = circleBtn.style.height = "300px";
-    circleBtn.textContent = "Placeholder"; // Could be replaced with an image
+    circleBtn.style.width = circleBtn.style.height = "350px";
+
+    if (collectedItems[key] || challenges[key] || unlocks[key]) {
+        circleBtn.style.backgroundImage = "url(texturePack/itemSprite/" + key + ".png)";
+    } else {
+        console.log(key);
+        circleBtn.style.backgroundImage = "url(texturePack/itemSprite/" + key + "-Locked.png)";
+    }
+
+
+    
+    circleBtn.style.backgroundSize = "contain";
+    circleBtn.style.backgroundRepeat = "no-repeat";
+    circleBtn.style.backgroundPosition = "center";
+    circleBtn.disabled = true;
 
     right.appendChild(circleBtn);
     challengeDetailContainer.appendChild(left);
@@ -1216,7 +1268,7 @@ function updateCollectionUI() {
         Object.keys(itemsInfo).forEach(key => {
             const unlocked = collectedItems[key] === true;
             const btn = document.createElement("button");
-            btn.textContent = key;
+            btn.textContent = formatKey(key);
             btn.className = unlocked ? "unlocked" : "locked";
             btn.style.width = "150px";
             btn.style.height = "50px";
@@ -1232,7 +1284,7 @@ function updateCollectionUI() {
         Object.keys(challenges).forEach(key => {
             const unlocked = challenges[key];
             const btn = document.createElement("button");
-            btn.textContent = key;
+            btn.textContent = formatKey(key);
             btn.className = unlocked ? "unlocked" : "locked";
             btn.style.width = "150px";
             btn.style.height = "50px";
@@ -1592,6 +1644,37 @@ document.querySelectorAll(".settingsTab").forEach(tab => {
 });
 
 window.addEventListener("load", () => {
+    // Load saved collection data
+    const savedCollectedItems = localStorage.getItem('collectedItems');
+    if (savedCollectedItems) {
+        const saved = JSON.parse(savedCollectedItems);
+        for (const key in saved) {
+            if (collectedItems.hasOwnProperty(key)) {
+                collectedItems[key] = saved[key];
+            }
+        }
+    }
+    
+    const savedChallenges = localStorage.getItem('challenges');
+    if (savedChallenges) {
+        const saved = JSON.parse(savedChallenges);
+        for (const key in saved) {
+            if (challenges.hasOwnProperty(key)) {
+                challenges[key] = saved[key];
+            }
+        }
+    }
+    
+    const savedUnlocks = localStorage.getItem('unlocks');
+    if (savedUnlocks) {
+        const saved = JSON.parse(savedUnlocks);
+        for (const key in saved) {
+            if (unlocks.hasOwnProperty(key)) {
+                unlocks[key] = saved[key];
+            }
+        }
+    }
+    
     playMenuMusic();
 });
 
