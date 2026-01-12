@@ -136,7 +136,7 @@ let inventory = {
     piercingShots: false
 };  
 
-let unlocks = {
+let achievements = {
     "Survivor": false
 }
 
@@ -389,7 +389,8 @@ function turretBullets(){
             const dist = Math.sqrt(dx*dx + dy*dy);
             const bullet = document.createElement("div");
             bullet.style.position = "absolute";
-            bullet.style.backgroundColor = "red";
+            bullet.style.backgroundColor = "purple";
+            bullet.style.borderRadius = "100%";
             bullet.style.width = playerStats.bulletSize + "px";
             bullet.style.height = playerStats.bulletSize + "px";
             bullet.x = turret.x + playerStats.width / 2 - playerStats.bulletSize / 2;
@@ -629,6 +630,7 @@ function updateEnemies(){
         if (emyDeath) continue;
         
         // Turret bullets collision
+        // 1 in 4 chance to make a circle radius 20 that kills any enemy inside it
         for (let j = tBullets.length - 1; j >= 0; j--){
             const blt = tBullets[j];
             const hit = 
@@ -647,6 +649,49 @@ function updateEnemies(){
                 
                 tBullets.splice(j , 1);
                 
+                //Void circle
+                if (Math.random() < 0.25){ // 25% chance
+                    const voidCircle = document.createElement("div");
+                    voidCircle.style.position = "absolute";
+                    voidCircle.style.width = voidCircle.style.height = "100px";
+                    voidCircle.style.borderRadius = "100%";
+                    voidCircle.style.backgroundColor = "rgba(128,0,128,0.5)";
+                    voidCircle.style.zIndex = "1000";
+                    voidCircle.style.pointerEvents = "none";
+                    voidCircle.style.left = `${blt.x}px`;
+                    voidCircle.style.top = `${blt.y}px`;
+                    gameArea.appendChild(voidCircle);
+                    
+                    const voidX = blt.x + playerStats.bulletSize / 2;
+                    const voidY = blt.y + playerStats.bulletSize / 2;
+                    
+                    const voidInterval = setInterval(() => {
+                        enemies.forEach(otherEmy => {
+                            const odx = (otherEmy.x + enemyStat.width / 2) - voidX;  
+                            const ody = (otherEmy.y + enemyStat.height / 2) - voidY;
+                            const odist = Math.sqrt(odx * odx + ody * ody);
+                            if (odist <= 50){ // radius of 50
+                                //Void deletes enemies instantly
+                                if (otherEmy.parentNode === gameArea) gameArea.removeChild(otherEmy);
+                                enemies.splice(enemies.indexOf(otherEmy), 1);
+                                showDamage(otherEmy.x + 10, otherEmy.y, "VOID");
+                                
+                                //Regen player health only for void kills
+                                if (playerStats.health < 100){
+                                    playerStats.health += 2.5 * (20 * 0.1);
+                                    updateHealthBar();
+                                }
+                            }
+                        });
+                    }, 50); // Check every 50ms for enemies in the void
+                    
+                    setTimeout(() => {
+                        clearInterval(voidInterval);
+                        if (voidCircle.parentNode === gameArea) gameArea.removeChild(voidCircle);
+                    }, 500);
+                }
+
+
                 if (emy.health <= 0){
                     if (emy.parentNode === gameArea) gameArea.removeChild(emy);
                     enemies.splice(i , 1);
@@ -680,8 +725,11 @@ function createTurret(){
     const turret = document.createElement("div");
     turret.style.position = "absolute";
     turret.style.width = playerStats.width + "px";  turret.style.height = playerStats.height + "px";
-    turret.style.backgroundColor = "yellow";
+    turret.style.backgroundImage = "url(texturePack/turret.png)";
     turret.style.border = "2px solid black";
+    turret.style.backgroundSize = "contain";
+    turret.style.backgroundRepeat = "no-repeat";
+    turret.style.backgroundPosition = "center";
     
     const size = playerStats.width;
     const maxX = Math.max(0, gameArea.clientWidth - size * 2);
@@ -702,7 +750,13 @@ function createTurret(){
 function showDamage(x, y, amount){
     const dmg = document.createElement("div");
     dmg.className = "damage-number";
-    dmg.textContent = `-${amount}`;
+    if (amount === "VOID"){
+        dmg.textContent = "VOID";
+        dmg.style.color = "purple";
+        dmg.style.fontSize = "20px";
+    }else{ 
+        dmg.textContent = `-${amount}`;
+    }
     dmg.style.left = `${x + Math.random() * 10 - 5}px` //Randomize the postion 
     dmg.style.top = `${y}px`;
 
@@ -1139,8 +1193,8 @@ let itemsInfo = {
     shotSpeed: { condition: "Increases shot speed", description: "Shoot bullets faster." }
 };
 
-let unlocksInfo = {
-    Survivor: { condition: "Survive 1000 seconds", description: "Man I wish I could figure out what to unlock." }
+let achievementsInfo = {
+    Survivor: { condition: "Survive 1000 seconds", description: "Man I wish I could figure out what to achievement." }
 };
 
 function collectItem(itemName) {
@@ -1157,9 +1211,9 @@ function unlockChallenge(challengeName) {
     notifyCollectionChange(); // <-- update UI
 }
 
-function unlockFeature(unlockName) {
-    unlocks[unlockName] = true;
-    localStorage.setItem('unlocks', JSON.stringify(unlocks)); // Save to localStorage
+function achievementFeature(achievementName) {
+    achievements[achievementName] = true;
+    localStorage.setItem('achievements', JSON.stringify(achievements)); // Save to localStorage
     notifyCollectionChange(); // <-- update UI
 }
 
@@ -1198,7 +1252,7 @@ function showDetail(key, type) {
     let info;
     if (type === "challenge") info = challengesInfo[key];
     if (type === "item") info = itemsInfo[key];
-    if (type === "unlock") info = unlocksInfo[key];
+    if (type === "achievement") info = achievementsInfo[key];
 
     const left = document.createElement("div");
     left.className = "leftSide";
@@ -1221,9 +1275,9 @@ function showDetail(key, type) {
 
     const circleBtn = document.createElement("button");
     circleBtn.className = "circleButton";
-    circleBtn.style.width = circleBtn.style.height = "350px";
+    circleBtn.style.width = circleBtn.style.height = "250px";
 
-    if (collectedItems[key] || challenges[key] || unlocks[key]) {
+    if (collectedItems[key] || challenges[key] || achievements[key]) {
         circleBtn.style.backgroundImage = "url(texturePack/itemSprite/" + key + ".png)";
     } else {
         console.log(key);
@@ -1260,7 +1314,7 @@ function updateCollectionUI() {
 
     const itemsTab = document.getElementById("itemsTab");
     const challengesTab = document.getElementById("challengesTab");
-    const unlocksTab = document.getElementById("unlocksTab");
+    const achievementsTab = document.getElementById("achievementsTab");
 
     // --- ITEMS ---
     if (itemsTab) {
@@ -1294,19 +1348,19 @@ function updateCollectionUI() {
         });
     }
 
-    // --- UNLOCKS ---
-    if (unlocksTab) {
-        unlocksTab.innerHTML = "";
-        Object.keys(unlocks).forEach(key => {
-            const unlocked = unlocks[key];
+    // --- ACHIEVEMENTS ---
+    if (achievementsTab) {
+        achievementsTab.innerHTML = "";
+        Object.keys(achievements).forEach(key => {
+            const unlocked = achievements[key];
             const btn = document.createElement("button");
             btn.textContent = key;
             btn.className = unlocked ? "unlocked" : "locked";
             btn.style.width = "150px";
             btn.style.height = "50px";
             btn.style.fontSize = "18px";
-            btn.onclick = () => showDetail(key, "unlock");
-            unlocksTab.appendChild(btn);
+            btn.onclick = () => showDetail(key, "achievement");
+            achievementsTab.appendChild(btn);
         });
     }
 }
@@ -1459,12 +1513,12 @@ function gameLoop(){
         updateEnemies();
         checkItemPickUp();
         updateHealthBar();
-        timeScore.textContent = score;
 
         if (score >= 1000 && !features.Survivor.unlocked) {
-            unlockFeature("Survivor");
+            achievementFeature("Survivor");
         }
-
+        
+        timeScore.textContent = score;
     }
     
     gameLoopId = requestAnimationFrame(gameLoop); //To make it look nice
@@ -1665,12 +1719,12 @@ window.addEventListener("load", () => {
         }
     }
     
-    const savedUnlocks = localStorage.getItem('unlocks');
-    if (savedUnlocks) {
-        const saved = JSON.parse(savedUnlocks);
+    const savedAchievements = localStorage.getItem('achievements');
+    if (savedAchievements) {
+        const saved = JSON.parse(savedAchievements);
         for (const key in saved) {
-            if (unlocks.hasOwnProperty(key)) {
-                unlocks[key] = saved[key];
+            if (achievements.hasOwnProperty(key)) {
+                achievements[key] = saved[key];
             }
         }
     }
