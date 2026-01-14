@@ -37,6 +37,7 @@ const timeScore = document.getElementById("timeScore");
 
 let bullets = [], tBullets = [], enemies = [], inventoryItems = [], turrets = [], keysPressed = {};
 let lastShotTime = 0, turretShotTimer = 0;
+let lastTime = 0;
 let gameOver = false, gameRunning = false, gameLoopId = null;
 let paused = false, choosingItem = false, collectionOpen = false;
 let playerRegen = 0, playerSRegen = 0, playerMShield = 0;
@@ -429,7 +430,7 @@ function turretBullets(){
     });
 }
 
-function updateBullets(){
+function updateBullets(deltaTime){
     if (paused || !player) return;
     
     for (let i = bullets.length - 1; i >= 0; i--){
@@ -437,13 +438,13 @@ function updateBullets(){
         
         //Bullet homing code
         if (inventory.homingShot === true && enemies.length > 0) {
-            homingMissile(blt);
+            homingMissile(blt, deltaTime);
         }else{
-            //Regular bullet movement
-            if (blt.direction === "up")blt.y -= blt.speed;
-            if (blt.direction === "down")blt.y += blt.speed;
-            if (blt.direction === "left")blt.x -= blt.speed;
-            if (blt.direction === "right")blt.x += blt.speed;
+            //Regular bullet movement (scale by deltaTime)
+            if (blt.direction === "up")blt.y -= blt.speed * deltaTime * 60;
+            if (blt.direction === "down")blt.y += blt.speed * deltaTime * 60;
+            if (blt.direction === "left")blt.x -= blt.speed * deltaTime * 60;
+            if (blt.direction === "right")blt.x += blt.speed * deltaTime * 60;
         }
         
         blt.style.transform = `translate(${blt.x}px,${blt.y}px)`;
@@ -463,14 +464,14 @@ function updateBullets(){
     }
 }
 
-function turretUpdateBullets(){
+function turretUpdateBullets(deltaTime){
     if (paused) return;
     
     for (let i = tBullets.length - 1; i >= 0; i--){
         const blt = tBullets[i];
         
-        blt.x += blt.dx;
-        blt.y += blt.dy;
+        blt.x += blt.dx * deltaTime * 60;
+        blt.y += blt.dy * deltaTime * 60;
         
         blt.style.transform = `translate(${blt.x}px,${blt.y}px)`;
         
@@ -527,7 +528,7 @@ function spawnEnemy(){
     enemies.push(enemy);
 }
 
-function updateEnemies(){
+function updateEnemies(deltaTime){
     if (paused || !player) return;
     
     for (let i = enemies.length - 1; i >= 0; i--){
@@ -618,8 +619,8 @@ function updateEnemies(){
                 );
                 
                 if (dist !== 0 && inventory.piercingShots === false){
-                    emy.x += (dx / dist) * playerStats.knockBack;
-                    emy.y += (dy / dist) * playerStats.knockBack;
+                    emy.x += (dx / dist) * playerStats.knockBack * deltaTime * 60;
+                    emy.y += (dy / dist) * playerStats.knockBack * deltaTime * 60;
                 }
                 
                 let areaLimitX = blt.x < 0 || blt.x > gameArea.clientWidth;
@@ -693,7 +694,10 @@ function updateEnemies(){
                     voidCircle.style.position = "absolute";
                     voidCircle.style.width = voidCircle.style.height = "100px";
                     voidCircle.style.borderRadius = "100%";
-                    voidCircle.style.backgroundColor = "rgba(128,0,128,0.5)";
+                    voidCircle.style.backgroundImage = "url(texturePack/VOID.png)";
+                    voidCircle.style.backgroundPosition = "absolute";
+                    voidCircle.style.backgroundRepeat = "no-repeat";
+                    voidCircle.style.backgroundSize = "contain";
                     voidCircle.style.zIndex = "1000";
                     voidCircle.style.pointerEvents = "none";
                     voidCircle.style.left = `${blt.x}px`;
@@ -746,8 +750,8 @@ function updateEnemies(){
         //Moves enemy after checking all possible instances of death
         
         if (dist !== 0){
-                emy.x += (dx/ dist) * emy.speed;
-                emy.y += (dy/ dist) * emy.speed;
+                emy.x += (dx/ dist) * emy.speed * deltaTime * 60;
+                emy.y += (dy/ dist) * emy.speed * deltaTime * 60;
             }
             
             emy.style.transform = `translate(${emy.x}px,${emy.y}px)`;
@@ -792,6 +796,10 @@ function showDamage(x, y, amount){
         dmg.textContent = "VOID";
         dmg.style.color = "purple";
         dmg.style.fontSize = "20px";
+    }else if (amount === "NUKE"){
+        dmg.textContent = "NUKE";
+        dmg.style.color = "red";
+        dmg.style.fontSize = "30px";
     }else{ 
         dmg.textContent = `-${amount}`;
     }
@@ -804,6 +812,10 @@ function showDamage(x, y, amount){
     }
 
     gameArea.appendChild(dmg);
+    if (amount === "VOID" || amount === "NUKE") {
+        setTimeout(() => dmg.remove(), 1000); 
+        return
+    };
     setTimeout(() => dmg.remove(), 600);
 }
 
@@ -1112,7 +1124,7 @@ function applyItemEffect(type){
     }
 }
 
-function homingMissile(blt){
+function homingMissile(blt, deltaTime){
     let closestEnemy, closestDist = Infinity;
 
     if (inventory.piercingShots === true) {
@@ -1133,16 +1145,16 @@ function homingMissile(blt){
         const dy = (closestEnemy.y + enemyStat.height / 2) - (blt.y + playerStats.bulletSize / 2);
         const angle = Math.atan2(dy, dx);
         
-        blt.x += Math.cos(angle) * blt.speed;
-        blt.y += Math.sin(angle) * blt.speed;
+        blt.x += Math.cos(angle) * blt.speed * deltaTime * 60;
+        blt.y += Math.sin(angle) * blt.speed * deltaTime * 60;
         //Homing bullet going to the direction of the closest enemy and continuing that direction
         
         if (closestEnemy.health <= 0 && inventory.piercingShots === true){
             //If the closest enemy is dead and piercing shots are active, continue regular bullet movement
-            if (blt.direction === "up") blt.y -= blt.speed;
-            if (blt.direction === "down") blt.y += blt.speed;
-            if (blt.direction === "left") blt.x -= blt.speed;
-            if (blt.direction === "right") blt.x += blt.speed;
+            if (blt.direction === "up") blt.y -= blt.speed * deltaTime * 60;
+            if (blt.direction === "down") blt.y += blt.speed * deltaTime * 60;
+            if (blt.direction === "left") blt.x -= blt.speed * deltaTime * 60;
+            if (blt.direction === "right") blt.x += blt.speed * deltaTime * 60;
         }
     }
 }
@@ -1173,12 +1185,16 @@ function triggerNuke(){
     }, 200); // shake after flash (ms)
 
 
-    // Gain extra shielding
-    playerStats.extraShield = enemies.length * inventory.massacreShield * 0.5;
-    updateHealthBar();
+
+    
 
     // Kill all enemies
-    enemies.forEach(e => {e.remove()});
+    enemies.forEach(e => {
+        e.remove();
+        playerStats.extraShield = (playerMShield * (inventory.massacreShield * 1.1)); // Reset extra shield to only account for 1 enemy if any
+        updateHealthBar();
+        showDamage(e.x + 10, e.y, "NUKE");
+    });
     enemies = [];
 
     clearTimeout(nextSpawnTimeout);
@@ -1488,32 +1504,40 @@ function stopAllMusic() {
 //====================
 //   MAIN GAME LOOP  
 //====================
-function gameLoop(){
+function gameLoop(currentTime = performance.now()){
     if (gameOver || !gameRunning) return;
     
+    // Calculate delta time (time since last frame, in seconds)
+    const deltaTime = lastTime === 0 ? 1/60 : (currentTime - lastTime) / 1000;  // Convert ms to seconds
+    lastTime = currentTime;
+    
+    // Cap deltaTime to prevent large jumps (example; if tab is inactive)
+    const cappedDeltaTime = Math.min(deltaTime, 1 / 30);  // Max 30 FPS
+    
     let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
-
+    
     if (!paused){
+        // Player movement (now pixels per second, scaled by deltaTime)
         if (keysPressed["w"]) {
-            player.y -= playerStats.speed;
+            player.y -= playerStats.speed * cappedDeltaTime * 60;  // Assuming 60 FPS base
             if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
                 player.style.backgroundImage = `url(texturePack/Up_Player.png)`;
             }
         }
         if (keysPressed["s"]) {
-            player.y += playerStats.speed;
+            player.y += playerStats.speed * cappedDeltaTime * 60;
             if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
                 player.style.backgroundImage = `url(texturePack/Down_Player.png)`;
             }
         }
         if (keysPressed["a"]) {
-            player.x -= playerStats.speed;
+            player.x -= playerStats.speed * cappedDeltaTime * 60;
             if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
                 player.style.backgroundImage = `url(texturePack/Left_Player.png)`;
             }
         }
         if (keysPressed["d"]) {
-            player.x += playerStats.speed;
+            player.x += playerStats.speed * cappedDeltaTime * 60;
             if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
                 player.style.backgroundImage = `url(texturePack/Right_Player.png)`;
             }
@@ -1558,13 +1582,13 @@ function gameLoop(){
             turretShotTimer = 0;
         }
         
-        updateBullets();
-        turretUpdateBullets();
-        updateEnemies();
+        updateBullets(cappedDeltaTime);
+        turretUpdateBullets(cappedDeltaTime);
+        updateEnemies(cappedDeltaTime);
         checkItemPickUp();
         updateHealthBar();
 
-        if (score >= 1000 && !features.Survivor.unlocked) {
+        if (score >= 1000 && !achievements.Survivor) {
             achievementFeature("Survivor");
         }
         
