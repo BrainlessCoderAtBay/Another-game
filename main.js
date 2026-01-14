@@ -39,10 +39,10 @@ let bullets = [], tBullets = [], enemies = [], inventoryItems = [], turrets = []
 let lastShotTime = 0, turretShotTimer = 0;
 let gameOver = false, gameRunning = false, gameLoopId = null;
 let paused = false, choosingItem = false, collectionOpen = false;
-let playerRegen = 0, playerSRegen = 0;
+let playerRegen = 0, playerSRegen = 0, playerMShield = 0;
 let pausedStart = 0, pausedTime = 0;
 let startTime; let spawnItemInterval;
-let totalPlayerLife;
+let totalPlayerLife;    
 
 //====================
 //  CHARACTER STATS  
@@ -55,6 +55,7 @@ const playerStats = {
     width: 30, height: 30,  //Dimensions of the player model    
     health: 100, //Health of the player
     shield: 0, //Shield
+    extraShield: 0,//Massacre Shield Value 
     damage: 2.5,
     bulletRange: 300,
     bulletSize: 10,//Fat Bullets
@@ -83,7 +84,8 @@ const itemTypes = {
     range: "range", regen: "regen",
     sRegen: "sRegen", nuke: "nuke",
     homingShot: "homingShot", turret: "turret",
-    piercingShots: "piercingShots", shotSpeed: "shotSpeed"
+    piercingShots: "piercingShots", shotSpeed: "shotSpeed",
+    massacreShield: "massacreShield"
 }
 
 const itemTypesDescription = {
@@ -113,16 +115,21 @@ const itemTypesDescription = {
     
     homingShot: `Bullets home in on enemies.
                     <br>The end is inevitable!
-                    <br>Range is heavily reduced.`,
+                    <br>Range is heavily reduced.
+                    <br>Shot speed is reduced.`,
     
     turret: `Spawn a turret.
     <br>This isn't Tower Defense but sure!`,
     
     piercingShots: `Bullets pierce through enemies.
                             <br>Clean Shots!
-                        <br>Knockback left the chat`,
+                        <br>Knockback left the chat
+                        <br>Damage reduce`,
     shotSpeed: `Increase shot speed
-    <br>Its a pistol to you but a machine gun to me!`   
+    <br>Its a pistol to you but a machine gun to me!`,
+
+    massacreShield: `Gain sheild on nuke.
+                <br> The enemy is my shield!`,
 };
 
 let inventory = {
@@ -130,11 +137,11 @@ let inventory = {
     damage: 0, size: 0,
     range: 0, regen: 0,
     sRegen: 0, turret: 0,
-    shotSpeed: 0,
+    shotSpeed: 0, massacreShield: 0,
     nuke: false,
     homingShot: false,
     piercingShots: false
-};  
+};
 
 let achievements = {
     "Survivor": false
@@ -171,6 +178,7 @@ function ensureInventoryUI(){
         `Damage: ${playerStats.damage} | `+
         `Regen: ${playerRegen} | `+
         `S-Regen: ${playerSRegen} |` +
+        `M-Shield: ${playerMShield} |` +
         `Shoot Speed: ${Math.round(1000 / shotCoolDown)}`;
         
         document.body.appendChild(inv)
@@ -184,11 +192,12 @@ function updateInventoryUI(){
         inv.textContent = 
         `Speed: ${playerStats.speed} | ` +
         `Knockback: ${playerStats.knockBack} | ` +
-        `B-Size: ${playerStats.bulletSize} | ` +
+        `B-Size: ${Math.round(playerStats.bulletSize)} | ` +
         `Range: ${playerStats.bulletRange} | `+
         `Damage: ${playerStats.damage} | `+
         `Regen: ${playerRegen} | `+
-        `S-Regen: ${playerSRegen} |`+
+        `S-Regen: ${playerSRegen} |` +
+        `M-Shield: ${playerMShield} |` +
         `Shoot Speed: ${Math.round(1000 / shotCoolDown)}`;
         
         //Caret invisible
@@ -215,13 +224,20 @@ function createHealthBar(){
         const sBar = document.createElement("div"); const bar = document.createElement("div");
         sBar.id = "shieldBar";                      bar.id = "healthBar";
         sBar.style.position = bar.style.position = "absolute";
-        sBar.style.width = bar.style.width = "25%";
-        sBar.style.height = bar.style.height = "100%";
-        sBar.style.borderRadius = bar.style.borderRadius = "3px";
-        sBar.style.background = "blue"; bar.style.background = "red"
+        bar.style.width = "25%"; bar.style.height = "100%"; bar.style.top = "0px"; bar.style.borderRadius = "3px"; bar.style.background = "red";
+        sBar.style.width = "25%"; sBar.style.height = "100%"; sBar.style.top = "0px"; sBar.style.borderRadius = "3px"; sBar.style.background = "blue";
+
+        //Massace shield bar
+        //Will show next to shield bar
+        
+        const mBar = document.createElement("div");
+        mBar.id = "massacreShieldBar";
+        mBar.style.position = "absolute";
+        mBar.style.width = "25%"; mBar.style.height = "100%"; mBar.style.top = "0px"; mBar.style.borderRadius = "3px"; mBar.style.background = "yellow";
         
         healthBar.appendChild(bar);
         healthBar.appendChild(sBar);
+        healthBar.appendChild(mBar);
         document.body.appendChild(healthBar);
     }
 }
@@ -229,17 +245,22 @@ function createHealthBar(){
 function updateHealthBar(){
     const bar = document.getElementById("healthBar");
     const sBar = document.getElementById("shieldBar");
-    if (!bar || !sBar) return; // exit if bars don’t exist yet
+    const mBar = document.getElementById("massacreShieldBar");
+    if (!bar || !sBar || !mBar) return; // exit if bars don’t exist yet
     
     //Hard check to make sure hp and shield dont go overboard 
     if (playerStats.health > 100) playerStats.health = 100;
     if (playerStats.shield > 25) playerStats.shield = 25;
+    if (playerStats.extraShield > 25) playerStats.extraShield = 25;
     
     const healthPercent = Math.max(0, Math.min(playerStats.health, 100));
     bar.style.width = `${healthPercent}%`;
     
     const shieldPercent = Math.max(0, Math.min(playerStats.shield, 100));
     sBar.style.width = `${shieldPercent}%`;
+
+    const mShieldPercent = Math.max(0, Math.min(playerStats.extraShield, 100));
+    mBar.style.width = `${mShieldPercent}%`;
 }
 
 //====================
@@ -544,6 +565,23 @@ function updateEnemies(){
                     damage -= shieldAbsorb;
                     damage = Math.max(0, damage); // prevent negative damage
                     playerStats.shield = 0;
+                }
+            }
+            
+            //Extra Shield mechanics (Massacre Shield)
+            if (damage > 0 && playerStats.extraShield > 0) {
+                const shieldFactor = 2; // 1 shield absorbs 2 damage
+                const shieldAbsorb = playerStats.extraShield * shieldFactor;
+                
+                if (damage <= shieldAbsorb) {
+                    // Extra Shield absorbs all remaining damage
+                    playerStats.extraShield -= damage / shieldFactor;
+                    damage = 0;
+                } else {
+                    // Extra Shield is fully depleted, remaining damage hits health
+                    damage -= shieldAbsorb;
+                    damage = Math.max(0, damage); // prevent negative damage
+                    playerStats.extraShield = 0;
                 }
             }
             
@@ -1067,6 +1105,10 @@ function applyItemEffect(type){
             inventory.shotSpeed++;
             shotCoolDown = Math.max(10, shotCoolDown - 20);
             break;
+        case itemTypes.massacreShield:
+            inventory.massacreShield += 0.5;
+            playerMShield += 1;
+            break;
     }
 }
 
@@ -1129,9 +1171,14 @@ function triggerNuke(){
     setTimeout(() => {
         gameArea.classList.remove("shake");
     }, 200); // shake after flash (ms)
-    
+
+
+    // Gain extra shielding
+    playerStats.extraShield = enemies.length * inventory.massacreShield * 0.5;
+    updateHealthBar();
+
     // Kill all enemies
-    enemies.forEach(e => e.remove());
+    enemies.forEach(e => {e.remove()});
     enemies = [];
 
     clearTimeout(nextSpawnTimeout);
@@ -1159,7 +1206,8 @@ let collectedItems = {
     nuke: false,
     homingShot: false,
     piercingShots: false,
-    shotSpeed: false
+    shotSpeed: false,
+    massacreShield: false
 };
 
 // Info objects
@@ -1190,7 +1238,8 @@ let itemsInfo = {
     nuke: { condition: "Use a nuke", description: "Destroy all enemies on screen." },
     homingShot: { condition: "Homing bullets", description: "Bullets will follow enemies." },
     piercingShots: { condition: "Piercing bullets", description: "Bullets pierce through enemies." },
-    shotSpeed: { condition: "Increases shot speed", description: "Shoot bullets faster." }
+    shotSpeed: { condition: "Increases shot speed", description: "Shoot bullets faster." },
+    massacreShield: { condition: "Massacre Shield", description: "Gain extra shield when using nuke." }
 };
 
 let achievementsInfo = {
@@ -1236,9 +1285,10 @@ function formatKey(key) {
             return "First Kill";
         case "Use_Nuke":
             return "Use Nuke";
+        case "massacreShield":
+            return "Massacre Shield";
         default:
             return key.charAt(0).toUpperCase() + key.slice(1);
-
     }
 }
 
