@@ -694,7 +694,7 @@ function updateEnemies(deltaTime){
                     voidCircle.style.position = "absolute";
                     voidCircle.style.width = voidCircle.style.height = "100px";
                     voidCircle.style.borderRadius = "100%";
-                    voidCircle.style.backgroundImage = "url(texturePack/VOID.png)";
+                    voidCircle.style.backgroundImage = "url(texturePack/VOID.jpg)";
                     voidCircle.style.backgroundPosition = "absolute";
                     voidCircle.style.backgroundRepeat = "no-repeat";
                     voidCircle.style.backgroundSize = "contain";
