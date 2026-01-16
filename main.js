@@ -42,8 +42,8 @@ let gameOver = false, gameRunning = false, gameLoopId = null;
 let paused = false, choosingItem = false, collectionOpen = false;
 let playerRegen = 0, playerSRegen = 0, playerMShield = 0;
 let pausedStart = 0, pausedTime = 0;
-let startTime; let spawnItemInterval;
-let totalPlayerLife;    
+let startTime, spawnItemInterval;
+let totalPlayerLife, voidMKills = 0;    
 
 //====================
 //  CHARACTER STATS  
@@ -145,7 +145,8 @@ let inventory = {
 };
 
 let achievements = {
-    "Survivor": false
+    "Survivor": false,
+    "Void_Master": false
 }
 
 let challenges = {
@@ -302,26 +303,66 @@ function togglePause(){
         p.textContent = "PAUSED";
         p.style.fontSize = "50px";
         p.style.color = "white";
-        p.style.top = p.style.left = "50%";
+        p.style.top = "35%"; p.style.left = "50%";
         p.style.transform = `translate(-50%,-50%)`;
         
+        // Volume control during pause
+        const volumeContainer = document.createElement("div");
+        volumeContainer.id = "pauseVolumeContainer";
+        volumeContainer.style.position = "absolute";
+        volumeContainer.style.top = "50%";
+        volumeContainer.style.left = "50%";
+        volumeContainer.style.transform = "translateX(-50%)";
+        volumeContainer.style.textAlign = "center";
+        
+        const volumeLabel = document.createElement("label");
+        volumeLabel.textContent = "Volume: ";
+        volumeLabel.style.color = "white";
+        volumeLabel.style.fontSize = "20px";
+        volumeLabel.style.marginRight = "10px";
+        
+        const volumeSlider = document.createElement("input");
+        volumeSlider.type = "range";
+        volumeSlider.id = "pauseVolumeSlider";
+        volumeSlider.min = "0";
+        volumeSlider.max = "100";
+        volumeSlider.value = masterVolume * 100;
+        volumeSlider.style.width = "200px";
+        volumeSlider.style.cursor = "pointer";
+        volumeSlider.oninput = () => {
+            masterVolume = volumeSlider.value / 100;
+            menuMusic.volume = masterVolume;
+            gameMusic.volume = masterVolume;
+            // Sync settings volume slider
+            const settingsSlider = document.getElementById("volumeSlider");
+            if (settingsSlider) settingsSlider.value = volumeSlider.value;
+        };
         const pBtn = document.createElement("button");
+        
         pBtn.onclick = returnFromGame;
         pBtn.id = "pauseReturnBtn";
         pBtn.style.position = "absolute";
         pBtn.style.fontSize = "24px";
         pBtn.textContent = "Return";
         pBtn.width = "150px"; pBtn.height = "50px";
-        pBtn.style.top = "55%"; pBtn.style.left = "50%";
+        pBtn.style.top = "65%"; pBtn.style.left = "50%";
         pBtn.style.transform = "translateX(-50%)";
-        
+
         gameArea.appendChild(pBtn)
-        gameArea.appendChild(p);    
+        gameArea.appendChild(p);  
+        gameArea.appendChild(volumeContainer);
+        volumeContainer.appendChild(volumeLabel);
+        volumeContainer.appendChild(volumeSlider);
+        
     }else{
         pausedTime += Date.now() - pausedStart;
         if(pauseText && pauseReturnBtn) { //Safety Check
             gameArea.removeChild(pauseText);
             gameArea.removeChild(pauseReturnBtn);
+        }
+        const pauseVolumeContainer = document.getElementById("pauseVolumeContainer");
+        if(pauseVolumeContainer) {
+            gameArea.removeChild(pauseVolumeContainer);
         }
     }
 }
@@ -610,6 +651,10 @@ function updateEnemies(deltaTime){
                 emy.classList.add("hit");
                 showDamage(emy.x + 10, emy.y, blt.damage);
                 
+                if (emyDeath === false){
+                    playSoundEffect("HIT");
+                }
+                
                 const dx = emy.x - blt.x;
                 const dy = emy.y - blt.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -641,17 +686,19 @@ function updateEnemies(deltaTime){
                 if (emy.health <= 0){
                     
                     //Unlock first kill
-                    unlockChallenge("First_Kill");
+                    if (!challenges.First_Kill) unlockChallenge("First_Kill");
                     
                     //Regeneration func
                     if (inventory.regen && playerStats.health < 100){
-                        playerStats.health += playerRegen * (inventory.regen * 0.1); //Not to make it too overpowered
+                        playerStats.health += (inventory.regen * 0.1); // 1 health per 10 enemy kill times regen level 
+                        playerStats.health = Math.min(playerStats.health, 100);
                         updateHealthBar();
                     }
                     
                     //Shield regeneration func
-                    if (inventory.sRegen && playerStats.shield < 25){
-                        playerStats.shield += (playerSRegen * (inventory.sRegen * 1.1));
+                    if (inventory.sRegen && playerStats.shield < 100){
+                        playerStats.shield += (inventory.sRegen * 0.5); // 1 shield per sRegen level
+                        playerStats.shield = Math.min(playerStats.shield, 100);
                         updateHealthBar();
                     }
                 
@@ -717,6 +764,14 @@ function updateEnemies(deltaTime){
                                 if (otherEmy.parentNode === gameArea) gameArea.removeChild(otherEmy);
                                 enemies.splice(enemies.indexOf(otherEmy), 1);
                                 showDamage(otherEmy.x + 10, otherEmy.y, "VOID");
+
+                                //Count void kills for achievement 
+                                voidMKills++;
+                                //Save to local storage
+                                localStorage.setItem("voidMKills", voidMKills);
+                                if (voidMKills >= 10000 && !achievements.Void_Master){
+                                    achievementFeature("Void_Master");
+                                }
                                 
                                 //Regen player health only for void kills
                                 if (playerStats.health < 100){
@@ -1069,15 +1124,18 @@ function applyItemEffect(type){
             break;
         case itemTypes.size:
             inventory.size++;
-            playerStats.bulletSize = Math.min(playerStats.bulletSize * 1.5, playerStatCaps.bulletSize);
+            playerStats.bulletSize = Math.min(playerStats.bulletSize * 1.2, playerStatCaps.bulletSize);
             break;
         case itemTypes.damage:
             inventory.damage++;
-            playerStats.damage = Math.round(playerStats.damage * 1.2 * 100) / 100
-            break;
+            if (inventory.piercingShots){
+                playerStats.damage = Math.round(playerStats.damage * 1.25 * 100) / 100; //Increase by 25% if piercing shots are active
+            }else{
+                playerStats.damage = Math.round(playerStats.damage * 1.75 * 100) / 100; //Increase by 75%
+            }break;
         case itemTypes.knockBack:
             inventory.knockBack++;
-            playerStats.knockBack *= 1.2;
+            playerStats.knockBack *= 1.75;
             break;
         case itemTypes.range:
             inventory.range++;
@@ -1088,11 +1146,11 @@ function applyItemEffect(type){
             }
             break;
         case itemTypes.regen:
-            inventory.regen += 1;
+            inventory.regen += 1.75;
             playerRegen += 1;
             break;
         case itemTypes.sRegen:
-            inventory.sRegen += 0.5;
+            inventory.sRegen += 1;
             playerSRegen += 1;
             break;
         case itemTypes.turret:
@@ -1119,7 +1177,6 @@ function applyItemEffect(type){
             break;
         case itemTypes.massacreShield:
             inventory.massacreShield += 0.5;
-            playerMShield += 1;
             break;
     }
 }
@@ -1169,6 +1226,10 @@ function triggerNuke(){
     nukeFace.style.transition = "none";
     nukeFace.style.backgroundImage = "none";
     nukeFace.style.opacity = "1";
+    
+    // STEP 1.5 - MUSIC
+    playSoundEffect("NUKE");
+
 
     // Force repaint
     nukeFace.offsetHeight;
@@ -1184,14 +1245,11 @@ function triggerNuke(){
         gameArea.classList.remove("shake");
     }, 200); // shake after flash (ms)
 
-
-
-    
-
     // Kill all enemies
     enemies.forEach(e => {
         e.remove();
-        playerStats.extraShield = (playerMShield * (inventory.massacreShield * 1.1)); // Reset extra shield to only account for 1 enemy if any
+        playerStats.extraShield = inventory.massacreShield * 1; // Gains extra shield from each corpse
+        playerStats.extraShield = Math.min(playerStats.extraShield, 100);
         updateHealthBar();
         showDamage(e.x + 10, e.y, "NUKE");
     });
@@ -1259,7 +1317,8 @@ let itemsInfo = {
 };
 
 let achievementsInfo = {
-    Survivor: { condition: "Survive 1000 seconds", description: "Man I wish I could figure out what to achievement." }
+    Survivor: { condition: "Survive 1000 seconds", description: "Man I wish I could figure out what to achievement." },
+    Void_Master: { condition: `Kill 10000 enemies with void circles | Void kills: ${voidMKills}`, description: "Master of the void." }
 };
 
 function collectItem(itemName) {
@@ -1303,11 +1362,12 @@ function formatKey(key) {
             return "Use Nuke";
         case "massacreShield":
             return "Massacre Shield";
+        case "Void_Master":
+            return "Void Master";
         default:
             return key.charAt(0).toUpperCase() + key.slice(1);
     }
 }
-
 
 // Generic to show details
 function showDetail(key, type) {
@@ -1349,8 +1409,6 @@ function showDetail(key, type) {
         console.log(key);
         circleBtn.style.backgroundImage = "url(texturePack/itemSprite/" + key + "-Locked.png)";
     }
-
-
     
     circleBtn.style.backgroundSize = "contain";
     circleBtn.style.backgroundRepeat = "no-repeat";
@@ -1377,6 +1435,9 @@ function switchCollectionTab(tabName) {
 // Update Collection UI
 function updateCollectionUI() {
     if (!collectionScreen) return;
+
+    // Update Void_Master condition with current counter
+    achievementsInfo.Void_Master.condition = `Kill 100 enemies with void circles | Void kills: ${voidMKills}`;
 
     const itemsTab = document.getElementById("itemsTab");
     const challengesTab = document.getElementById("challengesTab");
@@ -1420,7 +1481,7 @@ function updateCollectionUI() {
         Object.keys(achievements).forEach(key => {
             const unlocked = achievements[key];
             const btn = document.createElement("button");
-            btn.textContent = key;
+            btn.textContent = formatKey(key);
             btn.className = unlocked ? "unlocked" : "locked";
             btn.style.width = "150px";
             btn.style.height = "50px";
@@ -1494,6 +1555,13 @@ function playGameMusic() {
     if (gameMusic.paused) {
         gameMusic.play().catch(() => {});
     }
+}
+
+function playSoundEffect(src){
+    if (masterVolume === 0) return;
+    const sfx = new Audio(`Music/SFX/${src}.mp3`);
+    sfx.volume = masterVolume;
+    sfx.play().catch(() => {});
 }
 
 function stopAllMusic() {
@@ -1802,7 +1870,14 @@ window.addEventListener("load", () => {
             }
         }
     }
-    
+
+    // The voidMKill score
+    const voidMKillScore = localStorage.getItem('voidMKills');
+    voidMKills = voidMKillScore ? parseInt(voidMKillScore): 0;
+    // UI update
+    notifyCollectionChange();
+
+    // Start menu music
     playMenuMusic();
 });
 
@@ -1814,6 +1889,10 @@ if (volumeSlider) {
 
         menuMusic.volume = masterVolume;
         gameMusic.volume = masterVolume;
+        
+        // Sync pause volume slider
+        const pauseSlider = document.getElementById("pauseVolumeSlider");
+        if (pauseSlider) pauseSlider.value = volumeSlider.value;
     });
 }
 
