@@ -291,35 +291,44 @@ function togglePause(){
     if(choosingItem || gameOver || !gameRunning) return;
     paused = !paused;
     
-    const pauseText = document.getElementById("pauseText");
-    const pauseReturnBtn = document.getElementById("pauseReturnBtn")
-    
     if(paused){
         pausedStart = Date.now();
         
-        const p = document.createElement("div");
-        p.id = "pauseText";
-        p.style.position = "absolute";
-        p.textContent = "PAUSED";
-        p.style.fontSize = "50px";
-        p.style.color = "white";
-        p.style.top = "35%"; p.style.left = "50%";
-        p.style.transform = `translate(-50%,-50%)`;
-        
         // Volume control during pause
+        // Create main audio panel container
+        const audioPanel = document.createElement("div");
+        audioPanel.id = "pauseAudioPanel";
+        audioPanel.style.position = "absolute";
+        audioPanel.style.top = "50%";
+        audioPanel.style.left = "50%";
+        audioPanel.style.transform = "translate(-50%, -50%)";
+        audioPanel.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+        audioPanel.style.border = "3px solid white";
+        audioPanel.style.borderRadius = "10px";
+        audioPanel.style.padding = "30px";
+        audioPanel.style.minWidth = "400px";
+        audioPanel.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.9)";
+        
+        // Add PAUSED title inside the panel
+        const pausedTitle = document.createElement("h2");
+        pausedTitle.textContent = "PAUSED";
+        pausedTitle.style.color = "white";
+        pausedTitle.style.textAlign = "center";
+        pausedTitle.style.fontSize = "32px";
+        pausedTitle.style.margin = "0 0 20px 0";
+        pausedTitle.style.fontWeight = "bold";
+        
         const volumeContainer = document.createElement("div");
         volumeContainer.id = "pauseVolumeContainer";
-        volumeContainer.style.position = "absolute";
-        volumeContainer.style.top = "50%";
-        volumeContainer.style.left = "50%";
-        volumeContainer.style.transform = "translateX(-50%)";
-        volumeContainer.style.textAlign = "center";
+        volumeContainer.style.marginBottom = "25px";
         
         const volumeLabel = document.createElement("label");
-        volumeLabel.textContent = "Volume: ";
+        volumeLabel.textContent = "Volume:";
         volumeLabel.style.color = "white";
-        volumeLabel.style.fontSize = "20px";
-        volumeLabel.style.marginRight = "10px";
+        volumeLabel.style.fontSize = "18px";
+        volumeLabel.style.fontWeight = "bold";
+        volumeLabel.style.display = "block";
+        volumeLabel.style.marginBottom = "10px";
         
         const volumeSlider = document.createElement("input");
         volumeSlider.type = "range";
@@ -327,8 +336,11 @@ function togglePause(){
         volumeSlider.min = "0";
         volumeSlider.max = "100";
         volumeSlider.value = masterVolume * 100;
-        volumeSlider.style.width = "200px";
+        volumeSlider.style.width = "100%";
+        volumeSlider.style.height = "8px";
+        volumeSlider.style.color = "white";
         volumeSlider.style.cursor = "pointer";
+        volumeSlider.style.borderRadius = "5px";
         volumeSlider.oninput = () => {
             masterVolume = volumeSlider.value / 100;
             menuMusic.volume = masterVolume;
@@ -337,32 +349,150 @@ function togglePause(){
             const settingsSlider = document.getElementById("volumeSlider");
             if (settingsSlider) settingsSlider.value = volumeSlider.value;
         };
+        
+        // Toggle buttons container
+        const toggleButtonsContainer = document.createElement("div");
+        toggleButtonsContainer.style.display = "flex";
+        toggleButtonsContainer.style.gap = "15px";
+        toggleButtonsContainer.style.marginBottom = "25px";
+        
+        // Music toggle button
+        const musicToggleBtn = document.createElement("button");
+        musicToggleBtn.id = "pauseMusicToggle";
+        musicToggleBtn.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+        musicToggleBtn.style.flex = "1";
+        musicToggleBtn.style.padding = "12px";
+        musicToggleBtn.style.fontSize = "14px";
+        musicToggleBtn.style.fontWeight = "bold";
+        musicToggleBtn.style.cursor = "pointer";
+        musicToggleBtn.style.backgroundColor = musicEnabled ? "white" : "black";
+        musicToggleBtn.style.color = musicEnabled ? "black" : "white";
+        musicToggleBtn.style.border = "none";
+        musicToggleBtn.style.borderRadius = "6px";
+        musicToggleBtn.style.transition = "all 0.3s ease";
+        musicToggleBtn.onmouseover = () => {
+            musicToggleBtn.style.transform = "scale(1.05)";
+        };
+        musicToggleBtn.onmouseout = () => {
+            musicToggleBtn.style.transform = "scale(1)";
+        };
+        musicToggleBtn.onclick = () => {
+            musicEnabled = !musicEnabled;
+            musicToggleBtn.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+            musicToggleBtn.style.backgroundColor = musicEnabled ? "white" : "black";
+            musicToggleBtn.style.color = musicEnabled ? "black" : "white";
+            if (musicEnabled) {
+                playGameMusic();
+            } else {
+                menuMusic.pause();
+                gameMusic.pause();
+            }
+        };
+        
+        // SFX toggle button
+        const sfxToggleBtn = document.createElement("button");
+        sfxToggleBtn.id = "pauseSfxToggle";
+        sfxToggleBtn.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+        sfxToggleBtn.style.flex = "1";
+        sfxToggleBtn.style.padding = "12px";
+        sfxToggleBtn.style.fontSize = "14px";
+        sfxToggleBtn.style.fontWeight = "bold";
+        sfxToggleBtn.style.cursor = "pointer";
+        sfxToggleBtn.style.backgroundColor = sfxEnabled ? "white" : "black";
+        sfxToggleBtn.style.color = sfxEnabled ? "black" : "white";
+        sfxToggleBtn.style.border = "none";
+        sfxToggleBtn.style.borderRadius = "6px";
+        sfxToggleBtn.style.transition = "all 0.3s ease";
+        sfxToggleBtn.onmouseover = () => {
+            sfxToggleBtn.style.transform = "scale(1.05)";
+        };
+        sfxToggleBtn.onmouseout = () => {
+            sfxToggleBtn.style.transform = "scale(1)";
+        };
+        sfxToggleBtn.onclick = () => {
+            sfxEnabled = !sfxEnabled;
+            sfxToggleBtn.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+            sfxToggleBtn.style.backgroundColor = sfxEnabled ? "white" : "black";
+            sfxToggleBtn.style.color = sfxEnabled ? "black" : "white";
+        };
+        
+        toggleButtonsContainer.appendChild(musicToggleBtn);
+        toggleButtonsContainer.appendChild(sfxToggleBtn);
+        
+        //Return from game button
         const pBtn = document.createElement("button");
         
-        pBtn.onclick = returnFromGame;
+        pBtn.onclick = togglePause;
         pBtn.id = "pauseReturnBtn";
-        pBtn.style.position = "absolute";
-        pBtn.style.fontSize = "24px";
-        pBtn.textContent = "Return";
-        pBtn.width = "150px"; pBtn.height = "50px";
-        pBtn.style.top = "65%"; pBtn.style.left = "50%";
-        pBtn.style.transform = "translateX(-50%)";
+        pBtn.style.width = "100%";
+        pBtn.style.padding = "12px";
+        pBtn.style.fontSize = "16px";
+        pBtn.style.fontWeight = "bold";
+        pBtn.textContent = "Return to Game";
+        pBtn.style.backgroundColor = "white";
+        pBtn.style.color = "black";
+        pBtn.style.border = "none";
+        pBtn.style.borderRadius = "6px";
+        pBtn.style.cursor = "pointer";
+        pBtn.style.transition = "all 0.3s ease";
+        pBtn.onmouseover = () => {
+            pBtn.style.backgroundColor = "black";
+            pBtn.style.color = "white";
+            pBtn.style.transform = "scale(1.02)";
+        };
+        pBtn.onmouseout = () => {
+            pBtn.style.backgroundColor = "white";
+            pBtn.style.color = "black";
+            pBtn.style.transform = "scale(1)";
+        };
 
-        gameArea.appendChild(pBtn)
-        gameArea.appendChild(p);  
-        gameArea.appendChild(volumeContainer);
+        //Return to menu button
+        const pBtnR = document.createElement("button");
+        
+        pBtnR.onclick = returnFromGame;
+        pBtnR.id = "pauseReturnBtn";
+        pBtnR.style.width = "100%";
+        pBtnR.style.padding = "12px";
+        pBtnR.style.marginTop = "10px";
+        pBtnR.style.fontSize = "16px";
+        pBtnR.style.fontWeight = "bold";
+        pBtnR.textContent = "Return to Menu";
+        pBtnR.style.backgroundColor = "white";
+        pBtnR.style.color = "black";
+        pBtnR.style.border = "none";
+        pBtnR.style.borderRadius = "6px";
+        pBtnR.style.cursor = "pointer";
+        pBtnR.style.transition = "all 0.3s ease";
+        pBtnR.onmouseover = () => {
+            pBtnR.style.backgroundColor = "black";
+            pBtnR.style.color = "white";
+            pBtnR.style.transform = "scale(1.02)";
+        };
+        pBtnR.onmouseout = () => {
+            pBtnR.style.backgroundColor = "white";
+            pBtnR.style.color = "black";
+            pBtnR.style.transform = "scale(1)";
+        };
+
+        gameArea.appendChild(audioPanel);
+        audioPanel.appendChild(pausedTitle);
+        audioPanel.appendChild(volumeContainer);
         volumeContainer.appendChild(volumeLabel);
         volumeContainer.appendChild(volumeSlider);
+        audioPanel.appendChild(toggleButtonsContainer);
+        audioPanel.appendChild(pBtn);
+        audioPanel.appendChild(pBtnR);
         
     }else{
         pausedTime += Date.now() - pausedStart;
-        if(pauseText && pauseReturnBtn) { //Safety Check
-            gameArea.removeChild(pauseText);
-            gameArea.removeChild(pauseReturnBtn);
+        const audioPanel = document.getElementById("pauseAudioPanel");
+        if(audioPanel) {
+            gameArea.removeChild(audioPanel);
         }
-        const pauseVolumeContainer = document.getElementById("pauseVolumeContainer");
-        if(pauseVolumeContainer) {
-            gameArea.removeChild(pauseVolumeContainer);
+        // Remove old pauseText if it exists (for backwards compatibility)
+        const pauseTextOld = document.getElementById("pauseText");
+        if(pauseTextOld) {
+            gameArea.removeChild(pauseTextOld);
         }
     }
 }
@@ -593,23 +723,6 @@ function updateEnemies(deltaTime){
         ){
             let damage = emy.damage;
             
-            //Shield mechanics
-            if (playerStats.shield > 0) {
-                const shieldFactor = 2; // 1 shield absorbs 2 damage
-                const shieldAbsorb = playerStats.shield * shieldFactor;
-                
-                if (damage <= shieldAbsorb) {
-                    // Shield absorbs all damage
-                    playerStats.shield -= damage / shieldFactor;
-                    damage = 0;
-                } else {
-                    // Shield is fully depleted, remaining damage hits health
-                    damage -= shieldAbsorb;
-                    damage = Math.max(0, damage); // prevent negative damage
-                    playerStats.shield = 0;
-                }
-            }
-            
             //Extra Shield mechanics (Massacre Shield)
             if (damage > 0 && playerStats.extraShield > 0) {
                 const shieldFactor = 2; // 1 shield absorbs 2 damage
@@ -626,9 +739,27 @@ function updateEnemies(deltaTime){
                     playerStats.extraShield = 0;
                 }
             }
+
+            //Shield mechanics (Absorbs damage after Massacre Shield)
+            if (playerStats.shield > 0 && playerStats.extraShield <= 0) {
+                const shieldFactor = 2; // 1 shield absorbs 2 damage
+                const shieldAbsorb = playerStats.shield * shieldFactor;
+                
+                if (damage <= shieldAbsorb) {
+                    // Shield absorbs all damage
+                    playerStats.shield -= damage / shieldFactor;
+                    damage = 0;
+                } else {
+                    // Shield is fully depleted, remaining damage hits health
+                    damage -= shieldAbsorb;
+                    damage = Math.max(0, damage); // prevent negative damage
+                    playerStats.shield = 0;
+                }
+            }
             
             if (damage > 0) playerStats.health -= damage;
             
+            playSoundEffect("DAMAGE");
             updateHealthBar();
             enemies.splice(i , 1);
             if (emy.parentNode === gameArea) gameArea.removeChild(emy);
@@ -1437,7 +1568,7 @@ function updateCollectionUI() {
     if (!collectionScreen) return;
 
     // Update Void_Master condition with current counter
-    achievementsInfo.Void_Master.condition = `Kill 100 enemies with void circles | Void kills: ${voidMKills}`;
+    achievementsInfo.Void_Master.condition = `Kill 10000 enemies with void circles | Void kills: ${voidMKills}`;
 
     const itemsTab = document.getElementById("itemsTab");
     const challengesTab = document.getElementById("challengesTab");
@@ -1533,6 +1664,8 @@ menuMusic.loop = true;
 gameMusic.loop = true;
 
 let masterVolume = 1; // 0.0 - 1.0
+let musicEnabled = true;
+let sfxEnabled = true;
 
 menuMusic.volume = masterVolume;
 gameMusic.volume = masterVolume;
@@ -1541,9 +1674,11 @@ function playMenuMusic() {
     gameMusic.pause();
     gameMusic.currentTime = 0;
 
-    menuMusic.volume = masterVolume;
-    if (menuMusic.paused) {
-        menuMusic.play().catch(() => {});
+    if (musicEnabled) {
+        menuMusic.volume = masterVolume;
+        if (menuMusic.paused) {
+            menuMusic.play().catch(() => {});
+        }
     }
 }
 
@@ -1551,14 +1686,16 @@ function playGameMusic() {
     menuMusic.pause();
     menuMusic.currentTime = 0;
 
-    gameMusic.volume = masterVolume;
-    if (gameMusic.paused) {
-        gameMusic.play().catch(() => {});
+    if (musicEnabled) {
+        gameMusic.volume = masterVolume;
+        if (gameMusic.paused) {
+            gameMusic.play().catch(() => {});
+        }
     }
 }
 
 function playSoundEffect(src){
-    if (masterVolume === 0) return;
+    if (masterVolume === 0 || !sfxEnabled) return;
     const sfx = new Audio(`Music/SFX/${src}.mp3`);
     sfx.volume = masterVolume;
     sfx.play().catch(() => {});
@@ -1884,16 +2021,71 @@ window.addEventListener("load", () => {
 const volumeSlider = document.getElementById("volumeSlider");
 
 if (volumeSlider) {
+    // Update volume value display on load
+    const volumeValue = document.querySelector(".volumeValue");
+    if (volumeValue) {
+        volumeValue.textContent = volumeSlider.value + "%";
+    }
+    
     volumeSlider.addEventListener("input", () => {
         masterVolume = volumeSlider.value / 100;
 
         menuMusic.volume = masterVolume;
         gameMusic.volume = masterVolume;
         
+        // Update volume value display
+        if (volumeValue) {
+            volumeValue.textContent = volumeSlider.value + "%";
+        }
+        
         // Sync pause volume slider
         const pauseSlider = document.getElementById("pauseVolumeSlider");
         if (pauseSlider) pauseSlider.value = volumeSlider.value;
     });
+}
+
+// Settings Music Toggle Button
+const settingsMusicToggle = document.getElementById("settingsMusicToggle");
+if (settingsMusicToggle) {
+    settingsMusicToggle.addEventListener("click", () => {
+        musicEnabled = !musicEnabled;
+        settingsMusicToggle.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+        settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
+        settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+        if (musicEnabled) {
+            playMenuMusic();
+        } else {
+            menuMusic.pause();
+            gameMusic.pause();
+        }
+    });
+    settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
+    settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+    settingsMusicToggle.style.padding = "10px 20px";
+    settingsMusicToggle.style.marginLeft = "10px";
+    settingsMusicToggle.style.marginTop = "10px";
+    settingsMusicToggle.style.cursor = "pointer";
+    settingsMusicToggle.style.border = "none";
+    settingsMusicToggle.style.borderRadius = "4px";
+}
+
+// Settings SFX Toggle Button
+const settingsSfxToggle = document.getElementById("settingsSfxToggle");
+if (settingsSfxToggle) {
+    settingsSfxToggle.addEventListener("click", () => {
+        sfxEnabled = !sfxEnabled;
+        settingsSfxToggle.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+        settingsSfxToggle.style.backgroundColor = sfxEnabled ? "#ffffff" : "#000000";
+        settingsSfxToggle.style.color = sfxEnabled ? "#000000" : "#ffffff";
+    });
+    settingsSfxToggle.style.backgroundColor = sfxEnabled ? "#ffffff" : "#000000";
+    settingsSfxToggle.style.color = sfxEnabled ? "#000000" : "#ffffff";
+    settingsSfxToggle.style.padding = "10px 20px";
+    settingsSfxToggle.style.marginLeft = "10px";
+    settingsSfxToggle.style.marginTop = "10px";
+    settingsSfxToggle.style.cursor = "pointer";
+    settingsSfxToggle.style.border = "none";
+    settingsSfxToggle.style.borderRadius = "4px";
 }
 
 window.addEventListener("resize", () => {

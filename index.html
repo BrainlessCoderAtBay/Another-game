@@ -28,8 +28,19 @@
             <!-- Audio Tab -->
             <div class="settingsTabContent" id="audioTab">
                 <h2>Audio Settings</h2>
-                <label for="volumeSlider">Volume:</label>
-                <input type="range" id="volumeSlider" min="0" max="100" step="1" value="100">
+                <div class="audioPanel">
+                    <div class="audioControl">
+                        <label for="volumeSlider">Master Volume:</label>
+                        <div class="volumeSliderContainer">
+                            <input type="range" id="volumeSlider" min="0" max="100" step="1" value="100">
+                            <span class="volumeValue">100%</span>
+                        </div>
+                    </div>
+                    <div class="audioButtonsContainer">
+                        <button id="settingsMusicToggle" class="audioToggleBtn">🔊 Music: ON</button>
+                        <button id="settingsSfxToggle" class="audioToggleBtn">🔊 SFX: ON</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Controls Tab -->

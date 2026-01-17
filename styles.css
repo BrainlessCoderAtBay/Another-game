@@ -3,6 +3,8 @@ html, body{
     padding: 0;
     height: 100%;
     overflow: hidden;
+    user-select: none;
+    outline: none;
 }
 
 #gameArea{
@@ -286,6 +288,119 @@ button{
 }
 #audioTab{
     font-size: 32px;
+}
+
+.audioPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: baseline;
+    padding: 25px;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    
+}
+
+.audioControl {
+    margin-bottom: 30px;
+}
+
+.audioControl label {
+    display: block;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.volumeSliderContainer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#volumeSlider {
+    width: 500px;
+    height: 10px;
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #2196F3;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #1976D2;
+}
+
+#volumeSlider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #2196F3;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+#volumeSlider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    background: #1976D2;
+}
+
+.volumeValue {
+    color: white;
+    font-weight: bolder;
+    font-size: 34px;
+    min-width: 50px;
+    text-align: right;
+}
+
+.audioButtonsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.audioToggleBtn {
+    flex: 1;
+    width: 200px;
+    padding: 15px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: black;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.audioToggleBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.audioToggleBtn:active {
+    transform: translateY(-1px);
 }
 
 
