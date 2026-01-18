@@ -1214,9 +1214,13 @@ function showItemChoice(){
     choiceContainer.style.position = "absolute";
     choiceContainer.style.top = choiceContainer.style.left = "50%";
     choiceContainer.style.transform = `translate(-50%,-50%)`;
-    choiceContainer.style.backgroundColor = "rgba(0,0,0,0.8)";
-    choiceContainer.style.padding = "20px";
-    choiceContainer.style.gap = "20px";
+    choiceContainer.style.backgroundColor = "rgba(0,0,0,0.95)";
+    choiceContainer.style.padding = "40px";
+    choiceContainer.style.gap = "30px";
+    choiceContainer.style.borderRadius = "20px";
+    choiceContainer.style.border = "3px solid rgba(255, 255, 255, 0.3)";
+    choiceContainer.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2)";
+    choiceContainer.style.backdropFilter = "blur(10px)";
     
     // Keyboard support
     function itemKeyHandler(e){
@@ -1232,17 +1236,82 @@ function showItemChoice(){
 
     choices.forEach((type, index) => {
         const btn = document.createElement("button");
-        btn.classList.add("itemChoiceButton")
-        btn.innerHTML = `<b>${index + 1}</b><br>${itemTypesDescription[type]}`;
-        btn.style.fontSize = "35px";
-        btn.style.width = "400px";
-        btn.style.height = "500px";
+        btn.classList.add("itemChoiceButton");
+        btn.style.width = "380px";
+        btn.style.height = "450px";
+        btn.style.display = "flex";
+        btn.style.flexDirection = "column";
+        btn.style.alignItems = "center";
+        btn.style.justifyContent = "space-between";
+        btn.style.padding = "30px";
+
+        // ======================
+        //     Sprite circle
+        // ====================== 
+        const spriteCircle = document.createElement("div");
+        spriteCircle.style.width = "100px";
+        spriteCircle.style.height = "100px";
+        spriteCircle.style.borderRadius = "50%";
+        spriteCircle.style.display = "flex";
+        spriteCircle.style.backgroundImage = collectedItems[type] ? `url(texturePack/itemSprite/${type}.png)` : `url(texturePack/itemSprite/${type}-Locked.png)`;
+        spriteCircle.style.backgroundRepeat = "no-repeat";
+        spriteCircle.style.backgroundPosition = "center";
+        spriteCircle.style.backgroundSize = "contain";
+        spriteCircle.style.alignItems = "center";
+        spriteCircle.style.justifyContent = "center";
+        spriteCircle.style.border = "2px solid rgba(255,255,255,0.3)";
+        // ======================
+        //       Item name
+        // ====================== 
+        const name = document.createElement("div");
+        name.textContent = type;
+        name.style.fontSize = "22px";
+        name.style.fontWeight = "bold";
+        name.style.marginTop = "15px";
+        name.style.textAlign = "center";
+
+        // ======================
+        //      Description
+        // ======================
+        const description = document.createElement("div");
+        description.style.fontSize = "16px";
+        description.style.lineHeight = "1.6";
+        description.style.textAlign = "center";
+        description.style.marginTop = "10px";
+        description.style.flex = "1";
+
+        // Allow <br> in descriptions
+        description.innerHTML = itemTypesDescription[type];
+
+        // ======================
+        //        Number
+        // ======================
+        const numberCircle = document.createElement("div");
+        numberCircle.textContent = index + 1;
+        numberCircle.style.width = "50px";
+        numberCircle.style.height = "50px";
+        numberCircle.style.borderRadius = "50%";
+        numberCircle.style.display = "flex";
+        numberCircle.style.alignItems = "center";
+        numberCircle.style.justifyContent = "center";
+        numberCircle.style.fontSize = "22px";
+        numberCircle.style.border = "2px solid black";
+        numberCircle.style.marginTop = "15px";
+
+        // ======================
+        //        Assemble
+        // ====================== 
+        btn.appendChild(spriteCircle);
+        btn.appendChild(name);
+        btn.appendChild(description);
+        btn.appendChild(numberCircle);
+
         btn.onclick = () => selectItem(type, btn);
-        
+
         buttons.push(btn);
-        
         choiceContainer.appendChild(btn);
     });
+
     
     gameArea.appendChild(choiceContainer);
 }
