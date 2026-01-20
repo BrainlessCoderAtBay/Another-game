@@ -25,6 +25,165 @@ Features:
 - Music and Control in settings organized in separate tabs
 - 45 day torture in the making of this game
 */
+//====================
+//     CONTROLLER
+//====================
+class Controller {
+    constructor() {
+        /* =====================
+                CORE STATE
+        ===================== */
+        this.move = { x: 0, y: 0 };
+        this.shoot = { up: false, down: false, left: false, right: false };
+        this.ui = { up: false, down: false, left: false, right: false, confirm: false, back: false };
+        this.pause = false;
+
+        this.deadzone = 0.25;
+
+        this.keys = Object.create(null);
+        this.gamepadIndex = null;
+
+        /* UI input cooldown */
+        this._uiLastTime = 0;
+        this._uiCooldown = 180; // ms
+        
+
+        /* =====================
+                KEYBOARD
+        ===================== */
+        window.addEventListener("keydown", e => {
+            this.keys[e.key.toLowerCase()] = true;
+        });
+
+        window.addEventListener("keyup", e => {
+            this.keys[e.key.toLowerCase()] = false;
+        });
+
+        /* =====================
+                GAMEPAD
+        ===================== */
+        window.addEventListener("gamepadconnected", e => {
+            this.gamepadIndex = e.gamepad.index;
+            console.log("🎮 Gamepad connected:", e.gamepad.id);
+        });
+
+        window.addEventListener("gamepaddisconnected", e => {
+            if (this.gamepadIndex === e.gamepad.index) {
+                this.gamepadIndex = null;
+            }
+        });
+    }
+
+    /* =====================
+        RESET (NEVER NULL)
+    ===================== */
+    reset() {
+        this.move.x = 0;
+        this.move.y = 0;
+
+        this.shoot.up = false;
+        this.shoot.down = false;
+        this.shoot.left = false;
+        this.shoot.right = false;
+
+        this.ui.up = false;
+        this.ui.down = false;
+        this.ui.left = false;
+        this.ui.right = false;
+        this.ui.confirm = false;
+        this.ui.back = false;
+
+        this.pause = false;
+    }
+
+    /* =====================
+        UI COOLDOWN
+    ===================== */
+    canUIInput() {
+        const now = Date.now();
+        if (now - this._uiLastTime < this._uiCooldown) return false;
+        this._uiLastTime = now;
+        return true;
+    }
+
+    /* =====================
+        UPDATE PER FRAME
+    ===================== */
+    update() {
+        this.reset();
+
+        /* =====================
+            KEYBOARD — MOVEMENT
+        ===================== */
+        if (this.keys["w"]) this.move.y -= 1;
+        if (this.keys["s"]) this.move.y += 1;
+        if (this.keys["a"]) this.move.x -= 1;
+        if (this.keys["d"]) this.move.x += 1;
+
+        /* =====================
+            KEYBOARD — SHOOTING
+        ===================== */
+        if (this.keys["arrowup"]) this.shoot.up = true;
+        if (this.keys["arrowdown"]) this.shoot.down = true;
+        if (this.keys["arrowleft"]) this.shoot.left = true;
+        if (this.keys["arrowright"]) this.shoot.right = true;
+
+        /* =====================
+            KEYBOARD — UI
+        ===================== */
+        if (this.canUIInput()) {
+            if (this.keys["arrowup"]) this.ui.up = true;
+            if (this.keys["arrowdown"]) this.ui.down = true;
+            if (this.keys["arrowleft"]) this.ui.left = true;
+            if (this.keys["arrowright"]) this.ui.right = true;
+
+            if (this.keys["enter"]) this.ui.confirm = true;
+            if (this.keys["escape"]) this.ui.back = true;
+        }
+
+        if (this.keys["escape"]) this.pause = true;
+
+        /* =====================
+            GAMEPAD INPUT
+        ===================== */
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (!gp) return;
+
+            const lx = gp.axes[0] ?? 0;
+            const ly = gp.axes[1] ?? 0;
+            const rx = gp.axes[2] ?? 0;
+            const ry = gp.axes[3] ?? 0;
+
+            /* ---------- MOVE ---------- */
+            if (Math.abs(lx) > this.deadzone) this.move.x = lx;
+            if (Math.abs(ly) > this.deadzone) this.move.y = ly;
+
+            /* ---------- SHOOT ---------- */
+            if (Math.abs(rx) > this.deadzone || Math.abs(ry) > this.deadzone) {
+                if (Math.abs(rx) > Math.abs(ry)) {
+                    this.shoot[rx > 0 ? "right" : "left"] = true;
+                } else {
+                    this.shoot[ry > 0 ? "down" : "up"] = true;
+                }
+            }
+
+            /* ---------- UI ---------- */
+            if (this.canUIInput()) {
+                if (ly < -0.6) this.ui.up = true;
+                if (ly > 0.6) this.ui.down = true;
+                if (lx < -0.6) this.ui.left = true;
+                if (lx > 0.6) this.ui.right = true;
+
+                if (gp.buttons[0]?.pressed) this.ui.confirm = true; // A
+                if (gp.buttons[1]?.pressed) this.ui.back = true;    // B
+            }
+
+            /* ---------- PAUSE ---------- */
+            if (gp.buttons[9]?.pressed) this.pause = true; // Start
+        }
+    }
+}
 
 //====================
 //     GAME SETUP
@@ -34,6 +193,7 @@ const nukeFace = document.getElementById("nukeFace");
 const titleScreen = document.getElementById("titleScreen");
 const settingsScreen = document.getElementById("settingsScreen");
 const timeScore = document.getElementById("timeScore");
+const controller = new Controller();
 
 let bullets = [], tBullets = [], enemies = [], inventoryItems = [], turrets = [], keysPressed = {};
 let lastShotTime = 0, turretShotTimer = 0;
@@ -1778,84 +1938,68 @@ function stopAllMusic() {
 //====================
 //   MAIN GAME LOOP  
 //====================
-function gameLoop(currentTime = performance.now()){
+function gameLoop(currentTime = performance.now()) {
     if (gameOver || !gameRunning) return;
-    
-    // Calculate delta time (time since last frame, in seconds)
-    const deltaTime = lastTime === 0 ? 1/60 : (currentTime - lastTime) / 1000;  // Convert ms to seconds
+
+    const deltaTime = lastTime === 0 ? 1 / 60 : (currentTime - lastTime) / 1000;
     lastTime = currentTime;
-    
-    // Cap deltaTime to prevent large jumps (example; if tab is inactive)
-    const cappedDeltaTime = Math.min(deltaTime, 1 / 30);  // Max 30 FPS
-    
+    const cappedDeltaTime = Math.min(deltaTime, 1 / 30);
+
+    controller.update();
+
     let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
-    
-    if (!paused){
-        // Player movement (now pixels per second, scaled by deltaTime)
-        if (keysPressed["w"]) {
-            player.y -= playerStats.speed * cappedDeltaTime * 60;  // Assuming 60 FPS base
-            if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
-                player.style.backgroundImage = `url(texturePack/Up_Player.png)`;
-            }
-        }
-        if (keysPressed["s"]) {
-            player.y += playerStats.speed * cappedDeltaTime * 60;
-            if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
-                player.style.backgroundImage = `url(texturePack/Down_Player.png)`;
-            }
-        }
-        if (keysPressed["a"]) {
-            player.x -= playerStats.speed * cappedDeltaTime * 60;
-            if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
-                player.style.backgroundImage = `url(texturePack/Left_Player.png)`;
-            }
-        }
-        if (keysPressed["d"]) {
-            player.x += playerStats.speed * cappedDeltaTime * 60;
-            if (!keysPressed["arrowup"] && !keysPressed["arrowdown"] && !keysPressed["arrowleft"] && !keysPressed["arrowright"]){
-                player.style.backgroundImage = `url(texturePack/Right_Player.png)`;
-            }
-        }
-        
-        // Check if player is inside the area
+
+    if (!paused) {
+        /* ========= MOVEMENT ========= */
+        player.x += controller.move.x * playerStats.speed * cappedDeltaTime * 60;
+        player.y += controller.move.y * playerStats.speed * cappedDeltaTime * 60;
+
+        // Clamp player
         player.x = Math.max(0, Math.min(player.x, gameArea.clientWidth - playerStats.width));
-        player.y = Math.max(80, Math.min(player.y, gameArea.clientHeight - playerStats.height - 50));  // 60 is the borrowed space from the Score that is messing with collision limits and 50 is for the health bar
+        player.y = Math.max(
+            80,
+            Math.min(player.y, gameArea.clientHeight - playerStats.height - 50)
+        );
+
         player.style.transform = `translate(${player.x}px,${player.y}px)`;
-        
-        //Update Image for shooting
+
+        /* ========= SHOOTING ========= */
         const now = Date.now();
-        
-        if (keysPressed["arrowup"]){
-            player.style.backgroundImage = `url(texturePack/Up_Player.png)`; 
-            if (now - lastShotTime > shotCoolDown){
-                shootBullet("up"); 
+
+        if (controller.shoot.up) {
+            player.style.backgroundImage = `url(texturePack/Up_Player.png)`;
+            if (now - lastShotTime > shotCoolDown) {
+                shootBullet("up");
                 lastShotTime = now;
-            }   
-        }else if (keysPressed["arrowdown"]){
-            player.style.backgroundImage = `url(texturePack/Down_Player.png)`; 
-            if (now - lastShotTime > shotCoolDown){
-                shootBullet("down"); 
-                lastShotTime = now; 
             }
-        }else if (keysPressed["arrowleft"]){
-            player.style.backgroundImage = `url(texturePack/Left_Player.png)`; 
-            if (now - lastShotTime > shotCoolDown){
-                shootBullet("left"); 
+        } else if (controller.shoot.down) {
+            player.style.backgroundImage = `url(texturePack/Down_Player.png)`;
+            if (now - lastShotTime > shotCoolDown) {
+                shootBullet("down");
                 lastShotTime = now;
-            } 
-        }else if (keysPressed["arrowright"]){
-            player.style.backgroundImage = `url(texturePack/Right_Player.png)`; 
-            if (now - lastShotTime > shotCoolDown){
-                shootBullet("right"); 
-                lastShotTime = now;}
+            }
+        } else if (controller.shoot.left) {
+            player.style.backgroundImage = `url(texturePack/Left_Player.png)`;
+            if (now - lastShotTime > shotCoolDown) {
+                shootBullet("left");
+                lastShotTime = now;
+            }
+        } else if (controller.shoot.right) {
+            player.style.backgroundImage = `url(texturePack/Right_Player.png)`;
+            if (now - lastShotTime > shotCoolDown) {
+                shootBullet("right");
+                lastShotTime = now;
+            }
         }
-        
+
+        /* ========= TURRETS ========= */
         turretShotTimer++;
         if (turretShotTimer > 60) {
             turretBullets();
             turretShotTimer = 0;
         }
-        
+
+        /* ========= GAME UPDATES ========= */
         updateBullets(cappedDeltaTime);
         turretUpdateBullets(cappedDeltaTime);
         updateEnemies(cappedDeltaTime);
@@ -1865,13 +2009,12 @@ function gameLoop(currentTime = performance.now()){
         if (score >= 1000 && !achievements.Survivor) {
             achievementFeature("Survivor");
         }
-        
+
         timeScore.textContent = score;
     }
-    
-    gameLoopId = requestAnimationFrame(gameLoop); //To make it look nice
-}
 
+    gameLoopId = requestAnimationFrame(gameLoop);
+}
 
 //====================
 //     SPAWN RATE
@@ -2162,7 +2305,13 @@ window.addEventListener("resize", () => {
         player.x = Math.min(player.x, gameArea.clientWidth - playerStats.width);
         player.y = Math.min(player.y, gameArea.clientHeight - playerStats.height);
         player.style.transform = `translate(${player.x}px,${player.y}px)`;
-    })
+    }
+)
+
+window.addEventListener("gamepadconnected", (event) => {
+    console.log(`Gamepad Connected: ${event.gamepad.id}`)
+})
+
 
 //====================
 //      The End
