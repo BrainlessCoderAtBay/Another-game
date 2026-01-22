@@ -36,7 +36,9 @@ class Controller {
         this.move = { x: 0, y: 0 };
         this.shoot = { up: false, down: false, left: false, right: false };
         this.pause = false;
+        this.gamepadConnection = false;
         this.pausePressed = false;
+        this.xBtn = false;
         this.deadzone = 0.25;
 
         this.keys = Object.create(null);
@@ -59,11 +61,14 @@ class Controller {
         ===================== */
         window.addEventListener("gamepadconnected", e => {
             this.gamepadIndex = e.gamepad.index;
+            this.gamepadConnection = true;
             console.log("🎮 Gamepad connected:", e.gamepad.id);
         });
 
         window.addEventListener("gamepaddisconnected", e => {
             if (this.gamepadIndex === e.gamepad.index) {
+                console.log("Gamepad disconnected")
+                this.gamepadConnection = false;
                 this.gamepadIndex = null;
             }
         });
@@ -80,6 +85,7 @@ class Controller {
         this.shoot.down = false;
         this.shoot.left = false;
         this.shoot.right = false;
+
     }
 
     /* =====================
@@ -143,12 +149,28 @@ class Controller {
                 this.pause = false;
             }
 
-            if (!gp.buttons[9]?.pressed) {
-                this.pausePressed = false;
-            }
+            if (!gp.buttons[9]?.pressed)this.pausePressed = false;
+
+            if(gp.buttons[2]?.pressed) this.xBtn = true;
         }
     }
-}
+
+
+    endGameUpdate() {
+        if (this.gamepadIndex === null) return;
+
+        const gp = navigator.getGamepads()[this.gamepadIndex];
+        if (!gp) return;
+
+        if (gp.buttons[2]?.pressed && !this.xBtn) {
+            this.xBtn = true;
+        }
+
+        if (!gp.buttons[2]?.pressed) {
+            this.xBtn = false;
+        }
+    }
+}   
 
 //====================
 //     GAME SETUP
@@ -1144,6 +1166,25 @@ function showDamage(x, y, amount){
 //====================
 //     GAME OVER   
 //====================
+let endGameLoopRunning = false;
+
+function endGameLoop() {
+    if (!gameOver) {
+        endGameLoopRunning = false;
+        return;
+    }
+
+    controller.endGameUpdate();
+
+    if (controller.xBtn && controller.gamepadConnection) {
+        location.reload();
+        return;
+    }
+
+    requestAnimationFrame(endGameLoop); // ✅ async
+}
+
+
 function endGame(){
     gameOver = true;
     gameRunning = false;
@@ -1159,13 +1200,14 @@ function endGame(){
     bullets = []; tBullets = []; enemies = []; turrets = [];
     
     const mainMenu = document.createElement("button");
-    mainMenu.innerText = "Main Menu";
+    mainMenu.innerText = controller.gamepadConnection ? "Main Menu X" : "Main Menu";
     mainMenu.style.position = "absolute";
     mainMenu.style.width = "250px"; mainMenu.style.height = "50px";
     mainMenu.style.top = "50%";  mainMenu.style.left = "20%";
     mainMenu.style.transform = `translateY(-50%)`;
     mainMenu.style.fontSize = "24px";
     mainMenu.onclick = () => location.reload();
+    
     
     const restartBtn = document.createElement("button");
     restartBtn.innerText = "Restart";
@@ -1176,6 +1218,7 @@ function endGame(){
     restartBtn.style.fontSize = "24px";
     restartBtn.onclick = () => resetGame();
     
+    endGameLoop();
     gameArea.appendChild(mainMenu);
     gameArea.appendChild(restartBtn);
 }
@@ -1927,12 +1970,8 @@ function gameLoop(currentTime = performance.now()) {
     if (controller.pause && !pausedKeyPressed) {
         togglePause();
         pausedKeyPressed = true;
-        console.log(controller.pause)
-        console.log(pausedKeyPressed)
     } else if (!controller.pause) {
         pausedKeyPressed = false;
-        console.log(controller.pause)
-        console.log(pausedKeyPressed)
     }
 
     if (!paused) {
@@ -2295,11 +2334,6 @@ window.addEventListener("resize", () => {
         player.style.transform = `translate(${player.x}px,${player.y}px)`;
     }
 )
-
-window.addEventListener("gamepadconnected", (event) => {
-    console.log(`Gamepad Connected: ${event.gamepad.id}`)
-})
-
 
 //====================
 //      The End
