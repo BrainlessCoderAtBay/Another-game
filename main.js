@@ -35,18 +35,13 @@ class Controller {
         ===================== */
         this.move = { x: 0, y: 0 };
         this.shoot = { up: false, down: false, left: false, right: false };
-        this.ui = { up: false, down: false, left: false, right: false, confirm: false, back: false };
         this.pause = false;
-
+        this.pausePressed = false;
         this.deadzone = 0.25;
 
         this.keys = Object.create(null);
         this.gamepadIndex = null;
 
-        /* UI input cooldown */
-        this._uiLastTime = 0;
-        this._uiCooldown = 180; // ms
-        
 
         /* =====================
                 KEYBOARD
@@ -85,25 +80,6 @@ class Controller {
         this.shoot.down = false;
         this.shoot.left = false;
         this.shoot.right = false;
-
-        this.ui.up = false;
-        this.ui.down = false;
-        this.ui.left = false;
-        this.ui.right = false;
-        this.ui.confirm = false;
-        this.ui.back = false;
-
-        this.pause = false;
-    }
-
-    /* =====================
-        UI COOLDOWN
-    ===================== */
-    canUIInput() {
-        const now = Date.now();
-        if (now - this._uiLastTime < this._uiCooldown) return false;
-        this._uiLastTime = now;
-        return true;
     }
 
     /* =====================
@@ -131,15 +107,6 @@ class Controller {
         /* =====================
             KEYBOARD — UI
         ===================== */
-        if (this.canUIInput()) {
-            if (this.keys["arrowup"]) this.ui.up = true;
-            if (this.keys["arrowdown"]) this.ui.down = true;
-            if (this.keys["arrowleft"]) this.ui.left = true;
-            if (this.keys["arrowright"]) this.ui.right = true;
-
-            if (this.keys["enter"]) this.ui.confirm = true;
-            if (this.keys["escape"]) this.ui.back = true;
-        }
 
         if (this.keys["escape"]) this.pause = true;
 
@@ -168,19 +135,17 @@ class Controller {
                 }
             }
 
-            /* ---------- UI ---------- */
-            if (this.canUIInput()) {
-                if (ly < -0.6) this.ui.up = true;
-                if (ly > 0.6) this.ui.down = true;
-                if (lx < -0.6) this.ui.left = true;
-                if (lx > 0.6) this.ui.right = true;
-
-                if (gp.buttons[0]?.pressed) this.ui.confirm = true; // A
-                if (gp.buttons[1]?.pressed) this.ui.back = true;    // B
+            /* ---------- PAUSE ---------- */
+            if (gp.buttons[9]?.pressed && !this.pausePressed) {
+                this.pause = true;
+                this.pausePressed = true;
+            }else if (gp.buttons[9]?.pressed && this.pausePressed){
+                this.pause = false;
             }
 
-            /* ---------- PAUSE ---------- */
-            if (gp.buttons[9]?.pressed) this.pause = true; // Start
+            if (!gp.buttons[9]?.pressed) {
+                this.pausePressed = false;
+            }
         }
     }
 }
@@ -202,7 +167,7 @@ let gameOver = false, gameRunning = false, gameLoopId = null;
 let paused = false, choosingItem = false, collectionOpen = false;
 let playerRegen = 0, playerSRegen = 0, playerMShield = 0;
 let pausedStart = 0, pausedTime = 0;
-let startTime, spawnItemInterval;
+let startTime, spawnItemInterval; let pausedKeyPressed = false
 let totalPlayerLife, voidMKills = 0;    
 
 //====================
@@ -442,6 +407,7 @@ function createPauseButton(){
         btn.style.backgroundSize = "cover";
         
         btn.onclick = togglePause;
+        
         document.body.appendChild(btn);
     }
 }
@@ -660,12 +626,21 @@ function togglePause(){
 //====================
 //      INPUT 
 //====================
+
+
 document.addEventListener("keydown", e => {
     keysPressed[e.key.toLowerCase()] = true;
-    if (e.key === "Escape" && gameRunning) togglePause();
+    if (e.key === "Escape" && gameRunning && !pausedKeyPressed){ 
+        togglePause()
+        pausedKeyPressed = true;
+    };
 });
 document.addEventListener("keyup", e => {
     keysPressed[e.key.toLowerCase()] = false;
+    if (e.key === "Escape"){
+        pausedKeyPressed = false;
+        controller.pause = false;
+    }
 });
 
 //====================
@@ -1949,6 +1924,17 @@ function gameLoop(currentTime = performance.now()) {
 
     let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
 
+    if (controller.pause && !pausedKeyPressed) {
+        togglePause();
+        pausedKeyPressed = true;
+        console.log(controller.pause)
+        console.log(pausedKeyPressed)
+    } else if (!controller.pause) {
+        pausedKeyPressed = false;
+        console.log(controller.pause)
+        console.log(pausedKeyPressed)
+    }
+
     if (!paused) {
         /* ========= MOVEMENT ========= */
         player.x += controller.move.x * playerStats.speed * cappedDeltaTime * 60;
@@ -2009,6 +1995,8 @@ function gameLoop(currentTime = performance.now()) {
         if (score >= 1000 && !achievements.Survivor) {
             achievementFeature("Survivor");
         }
+
+        
 
         timeScore.textContent = score;
     }
