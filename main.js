@@ -38,8 +38,15 @@ class Controller {
         this.pause = false;
         this.gamepadConnection = false;
         this.pausePressed = false;
-        this.xBtn = false;
         this.deadzone = 0.25;
+
+        this.xBtn = false;
+        this.yBtn = false;
+        this.bBtn = false;
+
+        this.itemXBtn = false;
+        this.itemYBtn = false;
+        this.itemBBtn = false;
 
         this.keys = Object.create(null);
         this.gamepadIndex = null;
@@ -150,26 +157,50 @@ class Controller {
             }
 
             if (!gp.buttons[9]?.pressed)this.pausePressed = false;
-
-            if(gp.buttons[2]?.pressed) this.xBtn = true;
         }
     }
 
 
     endGameUpdate() {
         if (this.gamepadIndex === null) return;
-
         const gp = navigator.getGamepads()[this.gamepadIndex];
         if (!gp) return;
 
+        // X
         if (gp.buttons[2]?.pressed && !this.xBtn) {
             this.xBtn = true;
-        }
-
-        if (!gp.buttons[2]?.pressed) {
+        } else if (!gp.buttons[2]?.pressed) {
             this.xBtn = false;
         }
+
+        // Y
+        if (gp.buttons[3]?.pressed && !this.yBtn) {
+            this.yBtn = true;
+        } else if (!gp.buttons[3]?.pressed) {
+            this.yBtn = false;
+        }
     }
+
+
+    choiceUpdate() {
+        if (this.gamepadIndex === null) return;
+        const gp = navigator.getGamepads()[this.gamepadIndex];
+        if (!gp) return;
+
+        // B
+        if (gp.buttons[1]?.pressed && !this.itemBBtn) this.itemBBtn = true;
+        if (!gp.buttons[1]?.pressed) this.itemBBtn = false;
+
+        // X
+        if (gp.buttons[2]?.pressed && !this.itemXBtn) this.itemXBtn = true;
+        if (!gp.buttons[2]?.pressed) this.itemXBtn = false;
+
+        // Y
+        if (gp.buttons[3]?.pressed && !this.itemYBtn) this.itemYBtn = true;
+        if (!gp.buttons[3]?.pressed) this.itemYBtn = false;
+    }
+
+
 }   
 
 //====================
@@ -1181,6 +1212,11 @@ function endGameLoop() {
         return;
     }
 
+    if (controller.yBtn && controller.gamepadConnection) {
+        resetGame();
+        return;
+    }
+
     requestAnimationFrame(endGameLoop); // ✅ async
 }
 
@@ -1210,7 +1246,7 @@ function endGame(){
     
     
     const restartBtn = document.createElement("button");
-    restartBtn.innerText = "Restart";
+    restartBtn.innerText = controller.gamepadConnection ? "Restart Y" : "Restart";
     restartBtn.style.position = "absolute";
     restartBtn.style.width = "250px"; restartBtn.style.height = "50px"
     restartBtn.style.top = "50%"; restartBtn.style.left = "65%";
@@ -1337,6 +1373,8 @@ function checkItemPickUp(){
     }
 }
 
+
+
 function showItemChoice(){
     paused = true, choosingItem = true;
     pausedStart = Date.now();
@@ -1400,6 +1438,31 @@ function showItemChoice(){
     choiceContainer.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2)";
     choiceContainer.style.backdropFilter = "blur(10px)";
     
+    //Gampad
+    function itemChoiceUpdate(){
+        if (!choosingItem || gameOver) return;
+
+        controller.choiceUpdate();
+
+        //X = 1 Y = 2 B = 3
+        if (controller.itemXBtn) {
+            controller.itemXBtn = false;
+            selectItem(choices[0], buttons[0]);
+            return;
+        }
+        if (controller.itemYBtn) {
+            controller.itemYBtn = false;
+            selectItem(choices[1], buttons[1]);
+            return;
+        }
+        if (controller.itemBBtn) {
+            controller.itemBBtn = false;
+            selectItem(choices[2], buttons[2]);
+            return;
+        }
+
+        requestAnimationFrame(itemChoiceUpdate);
+    }
     // Keyboard support
     function itemKeyHandler(e){
         if (!choosingItem) return;
@@ -1492,6 +1555,7 @@ function showItemChoice(){
 
     
     gameArea.appendChild(choiceContainer);
+    requestAnimationFrame(itemChoiceUpdate)
 }
 
 function applyItemEffect(type){
