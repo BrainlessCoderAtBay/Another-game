@@ -24,6 +24,10 @@ Features:
 - Responsive UI elements
 - Music and Control in settings organized in separate tabs
 - 45 day torture in the making of this game
+
+
+PS: The Main Menu music doesnt play at the start for some reason but if you go into the game 
+    and return it works fine or add and remove a line of code to the file
 */
 //====================
 //     CONTROLLER
@@ -47,6 +51,9 @@ class Controller {
         this.itemXBtn = false;
         this.itemYBtn = false;
         this.itemBBtn = false;
+
+        this.dPadLeft = false;
+        this.dPadRight = false;
 
         this.keys = Object.create(null);
         this.gamepadIndex = null;
@@ -200,6 +207,24 @@ class Controller {
         if (!gp.buttons[3]?.pressed) this.itemYBtn = false;
     }
 
+
+    volumeUpdate(){
+        if (this.gamepadIndex === null) return;
+        const gp = navigator.getGamepads()[this.gamepadIndex];
+        if (!gp) return;
+
+        //D-Pad Left
+        if (gp.buttons[14]?.pressed && !this.dPadLeft){
+            this.dPadLeft = true;
+        }
+        if (!gp.buttons[14]?.pressed) this.dPadLeft = false;
+
+        //D-Pad Right
+        if (gp.buttons[15]?.pressed && !this.dPadRight){
+            this.dPadRight = true;
+        }
+        if (!gp.buttons[15]?.pressed) this.dPadRight = false;
+    }
 
 }   
 
@@ -1981,6 +2006,26 @@ let sfxEnabled = true;
 menuMusic.volume = masterVolume;
 gameMusic.volume = masterVolume;
 
+function applyMasterVolume(){
+    
+    masterVolume = Math.max(0, Math.min(1, masterVolume));
+
+    menuMusic.volume = masterVolume;
+    gameMusic.volume = masterVolume;
+
+
+    const volumeSlider = document.getElementById("volumeSlider");
+    if (volumeSlider) volumeSlider.value = Math.round(masterVolume * 100);
+
+    const pauseSlider = document.getElementById("pauseVolumeSlider");
+    if (pauseSlider) pauseSlider.value = Math.round(masterVolume * 100);
+
+    const volumeValue = document.getElementById(".volumeValue");
+    if (volumeValue) volumeValue.textContent = Math.round(masterVolume * 100) + "px";
+    
+    localStorage.setItem("masterVolume", masterVolume);
+}
+
 function playMenuMusic() {
     gameMusic.pause();
     gameMusic.currentTime = 0;
@@ -2028,7 +2073,20 @@ function gameLoop(currentTime = performance.now()) {
     const cappedDeltaTime = Math.min(deltaTime, 1 / 30);
 
     controller.update();
+    if (paused && !choosingItem){
+        controller.volumeUpdate();
 
+        if (controller.gamepadConnection && controller.dPadLeft && masterVolume > 0){
+            masterVolume -= 0.01;
+            applyMasterVolume();
+            controller.dPadLeft = false;
+        }
+        if (controller.gamepadConnection && controller.dPadRight && masterVolume < 1){
+            masterVolume += 0.01;
+            applyMasterVolume();
+            controller.dPadRight = false;
+        }
+    }
     let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
 
     if (controller.pause && !pausedKeyPressed) {
@@ -2318,7 +2376,27 @@ window.addEventListener("load", () => {
     notifyCollectionChange();
 
     // Start menu music
-    playMenuMusic();
+    const savedVolume = localStorage.getItem("masterVolume");
+    if (savedVolume !== null) masterVolume = parseFloat(savedVolume);
+
+    // Load saved music toggle
+    const savedMusicToggle = localStorage.getItem("musicEnabled");
+    if (savedMusicToggle !== null) musicEnabled = savedMusicToggle === "true";
+
+    // Apply volume
+    menuMusic.volume = masterVolume;
+    gameMusic.volume = masterVolume;
+
+    // Update UI toggles
+    const settingsMusicToggle = document.getElementById("settingsMusicToggle");
+    if (settingsMusicToggle) {
+        settingsMusicToggle.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+        settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
+        settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+    }
+
+    // Start menu music only if enabled
+    if (musicEnabled) playMenuMusic();
 });
 
 const volumeSlider = document.getElementById("volumeSlider");
@@ -2333,17 +2411,7 @@ if (volumeSlider) {
     volumeSlider.addEventListener("input", () => {
         masterVolume = volumeSlider.value / 100;
 
-        menuMusic.volume = masterVolume;
-        gameMusic.volume = masterVolume;
-        
-        // Update volume value display
-        if (volumeValue) {
-            volumeValue.textContent = volumeSlider.value + "%";
-        }
-        
-        // Sync pause volume slider
-        const pauseSlider = document.getElementById("pauseVolumeSlider");
-        if (pauseSlider) pauseSlider.value = volumeSlider.value;
+        applyMasterVolume();
     });
 }
 
