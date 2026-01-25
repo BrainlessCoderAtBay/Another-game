@@ -54,6 +54,8 @@ class Controller {
 
         this.dPadLeft = false;
         this.dPadRight = false;
+        this.triggerLB = false;
+        this.triggerRB = false;
 
         this.keys = Object.create(null);
         this.gamepadIndex = null;
@@ -224,6 +226,18 @@ class Controller {
             this.dPadRight = true;
         }
         if (!gp.buttons[15]?.pressed) this.dPadRight = false;
+
+        //LB
+        if (gp.buttons[4]?.pressed && !this.triggerLB){
+            this.triggerLB = true;
+        }
+        if (!gp.buttons[4]?.pressed) this.triggerLB = false;
+
+        //RB
+        if (gp.buttons[5]?.pressed && !this.triggerRB){
+            this.triggerRB = true;
+        }
+        if (!gp.buttons[5]?.pressed) this.triggerRB = false;
     }
 
 }   
@@ -2026,6 +2040,46 @@ function applyMasterVolume(){
     localStorage.setItem("masterVolume", masterVolume);
 }
 
+// Old frame state
+let prevTriggerLB = false;
+let prevTriggerRB = false;
+const TRIGGER_THRESHOLD = 0.5; // triggers considered "pressed" above this
+
+function handleControllerAudioToggles() {
+    const lbPressed = controller.triggerLB > TRIGGER_THRESHOLD;
+    const rbPressed = controller.triggerRB > TRIGGER_THRESHOLD;
+
+    // ---- RB: Toggle SFX ----
+    if (rbPressed && !prevTriggerRB) {
+        sfxEnabled = !sfxEnabled;
+        const sfxBtn = document.getElementById("pauseSfxToggle");
+        sfxBtn.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+        sfxBtn.style.backgroundColor = sfxEnabled  ? "white" : "black";
+        sfxBtn.style.color = sfxEnabled ? "black" : "white";
+        localStorage.setItem("sfxEnabled", sfxEnabled);
+    }
+
+    // ---- LB: Toggle Music ----
+    if (lbPressed && !prevTriggerLB) {
+        musicEnabled = !musicEnabled;
+        const musicBtn = document.getElementById("pauseMusicToggle");
+        musicBtn.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+        musicBtn.style.backgroundColor = musicEnabled ? "white" : "black";
+        musicBtn.style.color = musicEnabled ? "black" : "white";
+
+        localStorage.setItem("musicEnabled", musicEnabled);
+        if (musicEnabled) {
+            if (gameRunning && !gameOver) playGameMusic(); // ✅ make sure to CALL it
+        } else {
+            stopAllMusic();
+        }
+    }
+
+    // Update state
+    prevTriggerLB = lbPressed;
+    prevTriggerRB = rbPressed;
+}
+
 function playMenuMusic() {
     gameMusic.pause();
     gameMusic.currentTime = 0;
@@ -2039,16 +2093,18 @@ function playMenuMusic() {
 }
 
 function playGameMusic() {
+    if (!musicEnabled) return;
+
     menuMusic.pause();
     menuMusic.currentTime = 0;
 
-    if (musicEnabled) {
-        gameMusic.volume = masterVolume;
-        if (gameMusic.paused) {
-            gameMusic.play().catch(() => {});
-        }
-    }
+    gameMusic.pause();
+    gameMusic.currentTime = 0;
+
+    gameMusic.volume = masterVolume;
+    gameMusic.play().catch(() => {});
 }
+
 
 function playSoundEffect(src){
     if (masterVolume === 0 || !sfxEnabled) return;
@@ -2073,15 +2129,15 @@ function gameLoop(currentTime = performance.now()) {
     const cappedDeltaTime = Math.min(deltaTime, 1 / 30);
 
     controller.update();
-    if (paused && !choosingItem){
+    if (paused && !choosingItem && controller.gamepadConnection){
         controller.volumeUpdate();
-
-        if (controller.gamepadConnection && controller.dPadLeft && masterVolume > 0){
+        handleControllerAudioToggles();
+        if (controller.dPadLeft && masterVolume > 0){
             masterVolume -= 0.01;
             applyMasterVolume();
             controller.dPadLeft = false;
         }
-        if (controller.gamepadConnection && controller.dPadRight && masterVolume < 1){
+        if (controller.dPadRight && masterVolume < 1){
             masterVolume += 0.01;
             applyMasterVolume();
             controller.dPadRight = false;
