@@ -667,3 +667,21 @@ button{
     transform: scale(1.05);
     box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
 }
+
+
+/* Force yellow for selected items */
+button.selected {
+    background-color: #FFD700 !important; /* Gold/yellow */
+    color: black !important;              /* Making sure text is readable */
+}
+
+/* Optional: make hover also yellow */
+button:hover {
+    background-color: teal !important;
+    color: black !important;
+}
+
+/* Smooth transition for color change */
+button {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}

@@ -39,23 +39,47 @@ class Controller {
         ===================== */
         this.move = { x: 0, y: 0 };
         this.shoot = { up: false, down: false, left: false, right: false };
-        this.pause = false;
         this.gamepadConnection = false;
-        this.pausePressed = false;
         this.deadzone = 0.25;
 
+        //End game buttons
         this.xBtn = false;
         this.yBtn = false;
-        this.bBtn = false;
 
+        //Item buttons
         this.itemXBtn = false;
         this.itemYBtn = false;
         this.itemBBtn = false;
 
+        //Pause menu buttons
+        this.pause = false;
+        this.pausePressed = false;
         this.dPadLeft = false;
         this.dPadRight = false;
         this.triggerLB = false;
         this.triggerRB = false;
+
+        //Main Menu / Settings / Collection tab buttons
+        this.menuXBtn = false;
+        this.menuYBtn = false;
+        this.menuABtn = false;
+        this.menuBBtn = false;
+        this.menuLT = false;
+        this.menuRT = false;
+        this.menuLB = false;
+        this.menuRB = false;
+
+        //EDGE DETECTION 
+        this.menuABtnPrev = false;
+        this.menuBBtnPrev = false;
+        this.menuXBtnPrev = false;
+        this.menuYBtnPrev = false;
+        this.menuLBPrev = false;
+        this.menuRBPrev = false;
+        this.menuLTPrev = false;
+        this.menuRTPrev = false;
+
+
 
         this.keys = Object.create(null);
         this.gamepadIndex = null;
@@ -238,6 +262,34 @@ class Controller {
             this.triggerRB = true;
         }
         if (!gp.buttons[5]?.pressed) this.triggerRB = false;
+    }
+
+
+
+    menuUpdate() {
+        if (!this.gamepadConnection || this.gamepadIndex === null) return;
+        const gp = navigator.getGamepads()[this.gamepadIndex];
+        if (!gp) return;
+
+        // Helper: edge detect button presses
+        const edgeDetect = (btnIndex, prevStateName, currStateName) => {
+            if (gp.buttons[btnIndex]?.pressed && !this[prevStateName]) {
+                this[currStateName] = true;
+            } else {
+                this[currStateName] = false;
+            }
+            this[prevStateName] = gp.buttons[btnIndex]?.pressed;
+        };
+
+        // Buttons mapping
+        edgeDetect(0, "menuABtnPrev", "menuABtn"); // A
+        edgeDetect(1, "menuBBtnPrev", "menuBBtn"); // B
+        edgeDetect(2, "menuXBtnPrev", "menuXBtn"); // X
+        edgeDetect(3, "menuYBtnPrev", "menuYBtn"); // Y
+        edgeDetect(4, "menuLBPrev", "menuLB");     // LB
+        edgeDetect(5, "menuRBPrev", "menuRB");     // RB
+        edgeDetect(6, "menuLTPrev", "menuLT");     // LT
+        edgeDetect(7, "menuRTPrev", "menuRT");     // RT
     }
 
 }   
@@ -2298,6 +2350,123 @@ function returnToTitle(){
     titleScreen.style.display = "block";
 }
 
+let menuState = "main";
+// "main" | "settings" | "collections"
+
+let settingsTabIndex = 0;
+let collectionTabIndex = 0;
+let collectionItemIndex = 0;
+
+function menuControllerUpdate() {
+    if (gameRunning) return;
+
+    controller.menuUpdate();
+
+    if (menuState === "main") handleMainMenu();
+    if (menuState === "settings") handleSettingsMenu();
+    if (menuState === "collections") handleCollectionsMenu();
+
+    requestAnimationFrame(menuControllerUpdate);
+}
+
+function handleMainMenu() {
+    if (controller.menuXBtn) {
+        startGame();
+    }
+
+    if (controller.menuYBtn) {
+        settingsMenu();
+        menuState = "settings";
+    }
+
+    if (controller.menuABtn) {
+        openCollection();
+        menuState = "collections";
+    }
+}
+
+function handleSettingsMenu() {
+    const tabs = document.querySelectorAll(".settingsTab");
+
+    if (controller.menuLB) {
+        settingsTabIndex = Math.max(0, settingsTabIndex - 1);
+        activateSettingsTab(tabs);
+    }
+
+    if (controller.menuRB) {
+        settingsTabIndex = Math.min(tabs.length - 1, settingsTabIndex + 1);
+        activateSettingsTab(tabs);
+    }
+
+    if (controller.menuBBtn) {
+        returnToTitle();
+        menuState = "main";
+    }
+}
+
+function activateSettingsTab(tabs) {
+    tabs.forEach((t, i) => {
+        t.classList.toggle("active", i === settingsTabIndex);
+        document.getElementById(t.dataset.tab).style.display =
+            i === settingsTabIndex ? "block" : "none";
+    });
+}
+
+function handleCollectionsMenu() {
+    const tabs = ["itemsTab", "challengesTab", "achievementsTab"];
+
+    if (controller.menuLT) {
+        collectionTabIndex = Math.max(0, collectionTabIndex - 1);
+        switchCollectionTab(tabs[collectionTabIndex]);
+    }
+
+    if (controller.menuRT) {
+        collectionTabIndex = Math.min(tabs.length - 1, collectionTabIndex + 1);
+        switchCollectionTab(tabs[collectionTabIndex]);
+    }
+
+    handleCollectionItemNavigation();
+
+    if (controller.menuBBtn) {
+        closeCollection();
+        menuState = "main";
+    }
+}
+
+function handleCollectionItemNavigation() {
+    const currentTab = document.querySelector(
+        `#${["itemsTab","challengesTab","achievementsTab"][collectionTabIndex]}`
+    );
+
+    const buttons = currentTab?.querySelectorAll("button");
+    if (!buttons || buttons.length === 0) return;
+
+    // ----- ITEM NAVIGATION (LB / RB) -----
+    if (controller.menuLB) {
+        collectionItemIndex = Math.max(0, collectionItemIndex - 1);
+    }
+
+    if (controller.menuRB) {
+        collectionItemIndex = Math.min(buttons.length - 1, collectionItemIndex + 1);
+    }
+
+    // ----- HOVER & SELECT -----
+    buttons.forEach((btn, i) => {
+        const isSelected = i === collectionItemIndex;
+        btn.classList.toggle("selected", isSelected);
+        if (isSelected) {
+            // hover: focus() will trigger :focus styles
+            btn.focus({ preventScroll: true });
+        }
+    });
+
+    // ----- SELECT -----
+    if (controller.menuABtn) {
+        buttons[collectionItemIndex]?.click();
+    }
+}
+
+
 function returnFromGame() {
     // Stop game loop
     gameOver = true;
@@ -2348,6 +2517,8 @@ function returnFromGame() {
     
     // Show main menu
     titleScreen.style.display = "flex";
+
+    menuControllerUpdate();
 }
 
 function cleanupGameArea(){
@@ -2366,6 +2537,9 @@ function cleanupGameArea(){
     document.getElementById("itemChoiceContainer")?.remove();
 }
 
+//====================
+//  LISTENER VALLEY
+//====================
 
 document.querySelectorAll(".collectionTab").forEach(tab => {
     tab.addEventListener("click", () => {
@@ -2450,6 +2624,8 @@ window.addEventListener("load", () => {
         settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
         settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
     }
+
+    menuControllerUpdate();
 
     // Start menu music only if enabled
     if (musicEnabled) playMenuMusic();
