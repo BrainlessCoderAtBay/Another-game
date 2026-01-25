@@ -54,6 +54,10 @@ class Controller {
         //Pause menu buttons
         this.pause = false;
         this.pausePressed = false;
+        this.pauseXBtn = false;
+        this.pauseXBtnPressed = false;
+        this.pauseBBtn = false;
+        this.pauseBBtnPressed = false;
         this.dPadLeft = false;
         this.dPadRight = false;
         this.triggerLB = false;
@@ -189,7 +193,27 @@ class Controller {
                 this.pause = false;
             }
 
+            //B to turn off toggle
+            if (gp.buttons[1]?.pressed && !this.pauseBBtnPressed){
+                this.pauseBBtn = true;
+                this.pauseBBtnPressed = true;
+            }else if (gp.buttons[1]?.pressed && this.pauseBBtnPressed){
+                this.pauseBBtn = false;
+            }
+
+            //X to go back to menu
+            if (gp.buttons[2]?.pressed && !this.pauseXBtnPressed){
+                this.pauseXBtn = true;
+                this.pauseXBtnPressed = true;
+            }else if (gp.buttons[2]?.pressed && this.pauseXBtnPressed){
+                this.pauseXBtn = false;
+            }
+
+
+
             if (!gp.buttons[9]?.pressed)this.pausePressed = false;
+            if (!gp.buttons[1]?.pressed)this.pauseBBtnPressed = false;
+            if (!gp.buttons[2]?.pressed)this.pauseXBtnPressed = false;
         }
     }
 
@@ -2204,6 +2228,13 @@ function gameLoop(currentTime = performance.now()) {
         pausedKeyPressed = false;
     }
 
+    if (controller.pauseXBtn && paused){
+        returnFromGame();
+    }
+    if (controller.pauseBBtn && paused){
+        togglePause();
+    }
+
     if (!paused) {
         /* ========= MOVEMENT ========= */
         player.x += controller.move.x * playerStats.speed * cappedDeltaTime * 60;
@@ -2371,7 +2402,7 @@ function menuControllerUpdate() {
 
 function handleMainMenu() {
     if (controller.menuXBtn) {
-        startGame();
+        resetGame();
     }
 
     if (controller.menuYBtn) {
