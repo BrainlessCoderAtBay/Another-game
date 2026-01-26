@@ -72,6 +72,8 @@ class Controller {
         this.menuRT = false;
         this.menuLB = false;
         this.menuRB = false;
+        this.menuDPadLeft = false;
+        this.menuDPadRight = false;
 
         //EDGE DETECTION 
         this.menuABtnPrev = false;
@@ -304,6 +306,19 @@ class Controller {
             }
             this[prevStateName] = gp.buttons[btnIndex]?.pressed;
         };
+
+        //D-Pad Left
+        if (gp.buttons[14]?.pressed && !this.menuDPadLeft){
+            this.menuDPadLeft = true;
+        }
+        if (!gp.buttons[14]?.pressed) this.menuDPadLeft = false;
+
+        //D-Pad Right
+        if (gp.buttons[15]?.pressed && !this.menuDPadRight){
+            this.menuDPadRight = true;
+        }
+        if (!gp.buttons[15]?.pressed) this.menuDPadRight = false;
+
 
         // Buttons mapping
         edgeDetect(0, "menuABtnPrev", "menuABtn"); // A
@@ -2110,8 +2125,8 @@ function applyMasterVolume(){
     const pauseSlider = document.getElementById("pauseVolumeSlider");
     if (pauseSlider) pauseSlider.value = Math.round(masterVolume * 100);
 
-    const volumeValue = document.getElementById(".volumeValue");
-    if (volumeValue) volumeValue.textContent = Math.round(masterVolume * 100) + "px";
+    const volumeValue = document.querySelector(".volumeValue");
+    if (volumeValue) volumeValue.textContent = Math.round(masterVolume * 100) + "%";
     
     localStorage.setItem("masterVolume", masterVolume);
 }
@@ -2121,7 +2136,7 @@ let prevTriggerLB = false;
 let prevTriggerRB = false;
 const TRIGGER_THRESHOLD = 0.5; // triggers considered "pressed" above this
 
-function handleControllerAudioToggles() {
+function handleControllerPauseAudioToggles() {
     const lbPressed = controller.triggerLB > TRIGGER_THRESHOLD;
     const rbPressed = controller.triggerRB > TRIGGER_THRESHOLD;
 
@@ -2207,7 +2222,7 @@ function gameLoop(currentTime = performance.now()) {
     controller.update();
     if (paused && !choosingItem && controller.gamepadConnection){
         controller.volumeUpdate();
-        handleControllerAudioToggles();
+        handleControllerPauseAudioToggles();
         if (controller.dPadLeft && masterVolume > 0){
             masterVolume -= 0.01;
             applyMasterVolume();
@@ -2416,17 +2431,69 @@ function handleMainMenu() {
     }
 }
 
+let prevLB = false;
+let prevRB = false;
+ // triggers considered "pressed" above this
+
+function handleControllerSettingsAudioToggles() {
+    const lbPressed = controller.menuLB > TRIGGER_THRESHOLD;
+    const rbPressed = controller.menuRB > TRIGGER_THRESHOLD;
+
+    // ---- RB: Toggle SFX ----
+    if (rbPressed && !prevRB) {
+        sfxEnabled = !sfxEnabled;
+        const sfxBtn = document.getElementById("settingsSfxToggle");
+        sfxBtn.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+        sfxBtn.style.backgroundColor = sfxEnabled  ? "white" : "black";
+        sfxBtn.style.color = sfxEnabled ? "black" : "white";
+        localStorage.setItem("sfxEnabled", sfxEnabled);
+    }
+
+    // ---- LB: Toggle Music ----
+    if (lbPressed && !prevLB) {
+        musicEnabled = !musicEnabled;
+        const musicBtn = document.getElementById("settingsMusicToggle");
+        musicBtn.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
+        musicBtn.style.backgroundColor = musicEnabled ? "white" : "black";
+        musicBtn.style.color = musicEnabled ? "black" : "white";
+
+        localStorage.setItem("musicEnabled", musicEnabled);
+        if (musicEnabled) {
+            playMenuMusic(); // ✅ make sure to CALL it
+        } else {
+            stopAllMusic();
+        }
+    }
+
+    // Update state
+    prevLB = lbPressed;
+    prevRB = rbPressed;
+}
+
 function handleSettingsMenu() {
     const tabs = document.querySelectorAll(".settingsTab");
 
-    if (controller.menuLB) {
+    if (controller.menuLT) {
         settingsTabIndex = Math.max(0, settingsTabIndex - 1);
         activateSettingsTab(tabs);
     }
 
-    if (controller.menuRB) {
+    if (controller.menuRT) {
         settingsTabIndex = Math.min(tabs.length - 1, settingsTabIndex + 1);
         activateSettingsTab(tabs);
+    }
+    //Rb and Lb turn on and off music and sfx
+    handleControllerSettingsAudioToggles();
+    //Dpad left and right to change the music
+    if (controller.menuDPadLeft && masterVolume > 0){
+        masterVolume -= 0.01;
+        applyMasterVolume();
+        controller.menuDPadLeft = false;
+    }
+    if (controller.menuDPadRight && masterVolume < 1){
+        masterVolume += 0.01;
+        applyMasterVolume();
+        controller.menuDPadRight = false;
     }
 
     if (controller.menuBBtn) {
@@ -2660,23 +2727,29 @@ window.addEventListener("load", () => {
 
     // Start menu music only if enabled
     if (musicEnabled) playMenuMusic();
+
+    const volumeSlider = document.getElementById("volumeSlider");
+    const volumeValue = document.querySelector(".volumeValue");
+
+    if (volumeSlider) {
+        // Update volume value display on load
+        volumeSlider.value = Math.round(masterVolume * 100);
+
+        if (volumeValue){
+            volumeValue.textContent = volumeSlider.value + "%";
+        }
+
+        volumeSlider.addEventListener("input", () => {
+            masterVolume = volumeSlider.value / 100;
+            if(volumeValue) volumeValue.textContent = volumeSlider.value + "%";
+            applyMasterVolume();
+        })
+
+
+    }
 });
 
-const volumeSlider = document.getElementById("volumeSlider");
 
-if (volumeSlider) {
-    // Update volume value display on load
-    const volumeValue = document.querySelector(".volumeValue");
-    if (volumeValue) {
-        volumeValue.textContent = volumeSlider.value + "%";
-    }
-    
-    volumeSlider.addEventListener("input", () => {
-        masterVolume = volumeSlider.value / 100;
-
-        applyMasterVolume();
-    });
-}
 
 // Settings Music Toggle Button
 const settingsMusicToggle = document.getElementById("settingsMusicToggle");

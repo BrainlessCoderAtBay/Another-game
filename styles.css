@@ -685,3 +685,79 @@ button:hover {
 button {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
+/* Controller table wrapper (side by side) */
+.controllerTablesWrapper {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap; /* stack on smaller screens */
+    justify-content: center;
+    width: 100%;
+}
+
+/* Individual table wrapper */
+.controllerTable {
+    flex: 1 1 400px;   /* grow/shrink, 400px */
+    max-width: 500px;
+    overflow-x: auto;
+}
+
+/* Make table look like keyboard buttons */
+.controllerTable table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 12px;
+    table-layout: fixed;
+}
+
+/* Header row styled bold and centered */
+.controllerTable table tr:first-child td {
+    font-weight: bold;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+}
+
+/* All table cells styled like key buttons */
+.controllerTable table td {
+    padding: 13px 18px;
+    text-align: center;
+    font-size: 20px;
+    border: 2px solid white;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    cursor: default;
+    user-select: none;
+    white-space: nowrap; /* keep text on one line */
+}
+
+/* Optional: hover like keys */
+.controllerTable table td:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#controllerControls {
+    display: flex;
+    flex-direction: column; /* keep the title and wrapper stacked */
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.controllerTablesWrapper {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;  /* allows tables to stack on smaller screens */
+    justify-content: center;
+    width: 100%;
+}
+
+.controllerTable {
+    flex: 1 1 400px;   /* grows/shrinks with  400px */
+    max-width: 500px;  /* keeps a reasonable size */
+    overflow-x: auto;
+}
+
+#settingsScreen #controlsTab ~ #returnBtn {
+    transform: translateY(200%) translateX(-590%); /* move 250px left from center */
+}
