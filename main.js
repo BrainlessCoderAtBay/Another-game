@@ -353,6 +353,9 @@ let pausedStart = 0, pausedTime = 0;
 let startTime, spawnItemInterval; let pausedKeyPressed = false
 let totalPlayerLife, voidMKills = 0;    
 
+let gameOn = false;
+let settingsOn = false;
+let collectionsOn = false;
 //====================
 //  CHARACTER STATS  
 //====================
@@ -1339,6 +1342,8 @@ function endGameLoop() {
 
     if (controller.xBtn && controller.gamepadConnection) {
         location.reload();
+        gameOn = false;
+        controller.xBtn = false;
         return;
     }
 
@@ -2067,6 +2072,8 @@ function updateCollectionUI() {
 // Open / Close collection
 function openCollection() {
     collectionOpen = true;
+    collectionsOn = true;
+    menuState === "collections";
 
     titleScreen.style.display = "none";
     collectionScreen.style.display = "block";
@@ -2077,6 +2084,8 @@ function openCollection() {
 
 function closeCollection() {
     collectionOpen = false;
+    collectionsOn = false;
+    menuState === "main";
 
     collectionScreen.style.display = "none";
     titleScreen.style.display = "flex";
@@ -2236,17 +2245,19 @@ function gameLoop(currentTime = performance.now()) {
     }
     let score = Math.floor((Date.now() - startTime - pausedTime) / 1000);
 
-    if (controller.pause && !pausedKeyPressed) {
+    if (controller.pause && !pausedKeyPressed & !choosingItem) {
         togglePause();
         pausedKeyPressed = true;
     } else if (!controller.pause) {
         pausedKeyPressed = false;
     }
 
-    if (controller.pauseXBtn && paused){
+    if (controller.pauseXBtn && paused && !choosingItem){ // Make sure its not the itemChoose screen
         returnFromGame();
+        gameOn = false;
+        controller.pauseXBtn = false;
     }
-    if (controller.pauseBBtn && paused){
+    if (controller.pauseBBtn && paused && !choosingItem){
         togglePause();
     }
 
@@ -2353,6 +2364,7 @@ function startGame(){
     
     //Game is running
     gameRunning = true;
+    gameOn = true;
 
     //Reset flags
     gameOver = false, paused = false;
@@ -2387,11 +2399,18 @@ function startGame(){
 //  OTHER FUNCTIONS
 //====================
 function settingsMenu(){
+    settingsOn = true;
+    handleSettingsMenu();
+    menuState = "settings";
+
     titleScreen.style.display = "none";
     settingsScreen.style.display = "block";
 }
 
 function returnToTitle(){
+    settingsOn = false;
+    menuState === "main"
+
     settingsScreen.style.display = "none";
     titleScreen.style.display = "block";
 }
@@ -2416,8 +2435,9 @@ function menuControllerUpdate() {
 }
 
 function handleMainMenu() {
-    if (controller.menuXBtn) {
-        resetGame();
+    if (controller.menuXBtn && gameOn === false) {
+        resetGame(); 
+        gameOn = true;
     }
 
     if (controller.menuYBtn) {
@@ -2471,6 +2491,9 @@ function handleControllerSettingsAudioToggles() {
 }
 
 function handleSettingsMenu() {
+    if (gameOn || collectionsOn) return;
+    settingsOn = false;
+
     const tabs = document.querySelectorAll(".settingsTab");
 
     if (controller.menuLT) {
@@ -2498,6 +2521,7 @@ function handleSettingsMenu() {
 
     if (controller.menuBBtn) {
         returnToTitle();
+        settingsOn = false;
         menuState = "main";
     }
 }
@@ -2511,6 +2535,9 @@ function activateSettingsTab(tabs) {
 }
 
 function handleCollectionsMenu() {
+    if (gameOn || settingsOn) return;
+    collectionsOn = true; //Checks which tab is open
+
     const tabs = ["itemsTab", "challengesTab", "achievementsTab"];
 
     if (controller.menuLT) {
@@ -2527,6 +2554,7 @@ function handleCollectionsMenu() {
 
     if (controller.menuBBtn) {
         closeCollection();
+        collectionsOn = false;
         menuState = "main";
     }
 }
@@ -2567,6 +2595,7 @@ function handleCollectionItemNavigation() {
 
 function returnFromGame() {
     // Stop game loop
+    gameOn = false
     gameOver = true;
     paused = false;
     choosingItem = false;
@@ -2711,6 +2740,9 @@ window.addEventListener("load", () => {
     const savedMusicToggle = localStorage.getItem("musicEnabled");
     if (savedMusicToggle !== null) musicEnabled = savedMusicToggle === "true";
 
+    const savedSfxToggle = localStorage.getItem("sfxEnabled");
+    if (savedSfxToggle !== null) sfxEnabled = savedSfxToggle === "true";
+
     // Apply volume
     menuMusic.volume = masterVolume;
     gameMusic.volume = masterVolume;
@@ -2721,6 +2753,13 @@ window.addEventListener("load", () => {
         settingsMusicToggle.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
         settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
         settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+    }
+
+    const settingsSfxToggle = document.getElementById("settingsSfxToggle");
+    if (settingsSfxToggle) {
+        settingsSfxToggle.textContent = sfxEnabled ?"🔊 SFX: ON" : "🔇 SFX: OFF";
+        settingsSfxToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
+        settingsSfxToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
     }
 
     menuControllerUpdate();
