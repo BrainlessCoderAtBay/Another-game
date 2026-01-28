@@ -134,6 +134,10 @@ class Controller {
 
     }
 
+
+    //All update functions below run passively on the screens they are called in
+
+
     /* =====================
         UPDATE PER FRAME
     ===================== */
@@ -690,6 +694,7 @@ function togglePause(){
         };
         musicToggleBtn.onclick = () => {
             musicEnabled = !musicEnabled;
+            localStorage.setItem("musicEnabled", musicEnabled);
             musicToggleBtn.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
             musicToggleBtn.style.backgroundColor = musicEnabled ? "white" : "black";
             musicToggleBtn.style.color = musicEnabled ? "black" : "white";
@@ -723,6 +728,7 @@ function togglePause(){
         };
         sfxToggleBtn.onclick = () => {
             sfxEnabled = !sfxEnabled;
+            localStorage.setItem("sfxEnabled", sfxEnabled);
             sfxToggleBtn.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
             sfxToggleBtn.style.backgroundColor = sfxEnabled ? "white" : "black";
             sfxToggleBtn.style.color = sfxEnabled ? "black" : "white";
@@ -1357,6 +1363,9 @@ function endGameLoop() {
 
 
 function endGame(){
+
+    //Clean the variables for next game
+    
     gameOver = true;
     gameRunning = false;
     stopAllMusic();
@@ -1508,8 +1517,6 @@ function checkItemPickUp(){
     }
 }
 
-
-
 function showItemChoice(){
     paused = true, choosingItem = true;
     pausedStart = Date.now();
@@ -1580,6 +1587,7 @@ function showItemChoice(){
         controller.choiceUpdate();
 
         //X = 1 Y = 2 B = 3
+
         if (controller.itemXBtn) {
             controller.itemXBtn = false;
             selectItem(choices[0], buttons[0]);
@@ -1662,11 +1670,14 @@ function showItemChoice(){
         // ======================
         //        Number
         // ======================
+
+        const controllerItemMap = ["1 || X" , "2 || Y" , "3 || B"];
+
         const numberCircle = document.createElement("div");
-        numberCircle.textContent = index + 1;
-        numberCircle.style.width = "50px";
+        numberCircle.textContent = controller.gamepadConnection ? controllerItemMap[index] : index + 1;
+        numberCircle.style.width = controller.gamepadConnection ? "150px" : "50px";
         numberCircle.style.height = "50px";
-        numberCircle.style.borderRadius = "50%";
+        numberCircle.style.borderRadius = controller.gamepadConnection ? "10%" : "50%";
         numberCircle.style.display = "flex";
         numberCircle.style.alignItems = "center";
         numberCircle.style.justifyContent = "center";
@@ -2758,8 +2769,8 @@ window.addEventListener("load", () => {
     const settingsSfxToggle = document.getElementById("settingsSfxToggle");
     if (settingsSfxToggle) {
         settingsSfxToggle.textContent = sfxEnabled ?"🔊 SFX: ON" : "🔇 SFX: OFF";
-        settingsSfxToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
-        settingsSfxToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+        settingsSfxToggle.style.backgroundColor = sfxEnabled ? "#ffffff" : "#000000";
+        settingsSfxToggle.style.color = sfxEnabled ? "#000000" : "#ffffff";
     }
 
     menuControllerUpdate();
@@ -2798,6 +2809,7 @@ if (settingsMusicToggle) {
         settingsMusicToggle.textContent = musicEnabled ? "🔊 Music: ON" : "🔇 Music: OFF";
         settingsMusicToggle.style.backgroundColor = musicEnabled ? "#ffffff" : "#000000";
         settingsMusicToggle.style.color = musicEnabled ? "#000000" : "#ffffff";
+        localStorage.setItem("musicEnabled", musicEnabled);
         if (musicEnabled) {
             playMenuMusic();
         } else {
@@ -2823,6 +2835,7 @@ if (settingsSfxToggle) {
         settingsSfxToggle.textContent = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
         settingsSfxToggle.style.backgroundColor = sfxEnabled ? "#ffffff" : "#000000";
         settingsSfxToggle.style.color = sfxEnabled ? "#000000" : "#ffffff";
+        localStorage.setItem("sfxEnabled", sfxEnabled);
     });
     settingsSfxToggle.style.backgroundColor = sfxEnabled ? "#ffffff" : "#000000";
     settingsSfxToggle.style.color = sfxEnabled ? "#000000" : "#ffffff";
