@@ -688,7 +688,6 @@ button {
 /* Controller table wrapper (side by side) */
 .controllerTablesWrapper {
     display: flex;
-    gap: 20px;
     flex-wrap: wrap; /* stack on smaller screens */
     justify-content: center;
     width: 100%;
@@ -696,22 +695,23 @@ button {
 
 /* Individual table wrapper */
 .controllerTable {
-    flex: 1 1 400px;   /* grow/shrink, 400px */
+    flex: 1 1 200px;   /* grow/shrink, 400px */
     max-width: 500px;
     overflow-x: auto;
 }
 
 /* Make table look like keyboard buttons */
 .controllerTable table {
-    width: 100%;
+    width: 80%;
     border-collapse: separate;
-    border-spacing: 12px;
+    border-spacing: 5px;
     table-layout: fixed;
 }
 
 /* Header row styled bold and centered */
 .controllerTable table tr:first-child td {
     font-weight: bold;
+    width: 150px;
     text-align: center;
     background-color: rgba(255, 255, 255, 0.25);
     border-radius: 12px;
@@ -746,18 +746,24 @@ button {
 
 .controllerTablesWrapper {
     display: flex;
-    gap: 20px;
+    gap: 10px;
     flex-wrap: wrap;  /* allows tables to stack on smaller screens */
-    justify-content: center;
+    justify-content: space-around;
     width: 100%;
 }
 
 .controllerTable {
     flex: 1 1 400px;   /* grows/shrinks with  400px */
-    max-width: 500px;  /* keeps a reasonable size */
+    max-width: 400px;  /* keeps a reasonable size */
     overflow-x: auto;
 }
 
 #settingsScreen #controlsTab ~ #returnBtn {
-    transform: translateY(200%) translateX(-590%); /* move 250px left from center */
+    transform: translateY(200%) translateX(-750px); /* move 250px left from center */
+}
+
+#controllerControls {
+    justify-content: space-around;
+    width: 2000px;
+    transform: translateY(-75px);
 }
