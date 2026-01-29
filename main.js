@@ -23,7 +23,7 @@ Features:
 - Visual feedback for damage and game events
 - Responsive UI elements
 - Music and Control in settings organized in separate tabs
-- 45 day torture in the making of this game
+- 60 day torture in the making of this game
 
 
 PS: The Main Menu music doesnt play at the start for some reason but if you go into the game 
