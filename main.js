@@ -35,6 +35,7 @@ Features:
 - Responsive UI elements
 - Music and Control in settings organized in separate tabs
 - 60 day torture in the making of this game
+- Controller functionality : ACTIVE
 
 
 PS: The Main Menu music doesnt play at the start for some reason but if you go into the game 
