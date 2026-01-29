@@ -9,10 +9,21 @@ A top-down survival shooter where the player fights endless enemies,
 collects items, unlocks abilities, and survives as long as possible.
 
 Controls:
+
+Keyboard 
+
 WASD - Move
 Arrow Keys - Shoot
 ESC - Pause
 1 / 2 / 3 - Item Choice 
+
+Gamepad
+
+Left Analog - Movement
+Right Analog - Shoot
+Pause - Pause
+X / Y / B - Item Choice
+
 
 Features:
 - Dynamic enemy spawning that scales with time survived
